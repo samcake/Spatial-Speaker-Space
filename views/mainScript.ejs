@@ -16,6 +16,7 @@
     connectDisconnectButton.disabled = false;
     let toggleInputMuteButton = document.querySelector('.toggleInputMuteButton');
     let outputAudioEl = document.querySelector(`.outputAudioEl`);
+    outputAudioEl.addEventListener('canplay', (e) => { setOutputMute(false); } );
     let toggleOutputMuteButton = document.querySelector('.toggleOutputMuteButton');
     toggleOutputMuteButton.addEventListener("click", toggleOutputMute);
     let participantsFAB = document.querySelector('.participantsFAB');
@@ -427,8 +428,7 @@
 
         // Set the `srcObject` on our `audio` DOM element to the final, mixed audio stream from the High Fidelity Audio API Server.
         outputAudioEl.srcObject = hifiCommunicator.getOutputAudioMediaStream();
-        // We explicitly call `play()` here because certain browsers won't play the newly-set stream automatically.
-        outputAudioEl.play();
+        setOutputMute(false);
     }
 
     let isMuted = false;
@@ -456,15 +456,21 @@
         await setInputMute(!isMuted);
     }
 
-    function toggleOutputMute() {
-        outputAudioEl.muted = !outputAudioEl.muted;
+    function setOutputMute(newMuteStatus) {        
+        outputAudioEl.muted = !!newMuteStatus;
         console.log(`Set output mute status to \`${outputAudioEl.muted}\``);
 
         if (outputAudioEl.muted) {
             toggleOutputMuteButton.classList.add("toggleOutputMuteButton--muted");
         } else {
             toggleOutputMuteButton.classList.remove("toggleOutputMuteButton--muted");
+            // We explicitly call `play()` here because certain browsers won't play the newly-set stream automatically.
+            outputAudioEl.play();
         }
+    }
+
+    function toggleOutputMute() {
+        setOutputMute(!outputAudioEl.muted);
     }
 
     function closeParticipantsContainer() {
