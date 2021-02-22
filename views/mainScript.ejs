@@ -475,6 +475,7 @@
         e.stopPropagation();
     }
 
+    const currentHiFiGainValue = document.querySelector('.currentHiFiGainValue');
     function onHiFiGainChanged() {
         if (!hifiCommunicator) {
             return;
@@ -486,8 +487,15 @@
             return;
         }
 
-        myUserData.hiFiGain = hiFiGainSlider.value;
+        let sliderValue = parseInt(hiFiGainSlider.value);
+        // Make the UI look nice with a default gain slider value of 1.0 instead of 1.05...
+        if (sliderValue === 11) {
+            myUserData.hiFiGain = 1.0;
+        } else {
+            myUserData.hiFiGain = logarithmicScale(sliderValue, 1, 21, 1, 110) / 10;
+        }
 
+        currentHiFiGainValue.innerHTML = `HiFi Gain: ${myUserData.hiFiGain.toFixed(2)}`;
         console.log(`User changed their HiFiGain to ${myUserData.hiFiGain}`);
 
         console.log(hifiCommunicator.updateUserDataAndTransmit({

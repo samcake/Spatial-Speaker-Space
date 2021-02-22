@@ -9,6 +9,17 @@ function linearScale(factor, minInput, maxInput, minOutput, maxOutput) {
         (factor - minInput) / (maxInput - minInput);
 }
 
+function logarithmicScale(factor, minInput, maxInput, minOutput, maxOutput) {
+    factor = clamp(factor, minInput, maxInput);
+
+    minOutput = Math.log(minOutput);
+    maxOutput = Math.log(maxOutput);
+
+    let scale = (maxOutput - minOutput) / (maxInput - minInput);
+
+    return Math.exp(minOutput + scale * (factor - minInput));
+}
+
 function getRandomFloat(min, max) {
     return Math.random() * (max - min) + min;
 }
