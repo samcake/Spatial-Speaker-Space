@@ -55,7 +55,11 @@ function drawAvatarBase({ isMine, userData, avatarRadiusM, userHexColor, positio
     ctx.beginPath();
     ctx.arc(0, 0, avatarRadiusM * pxPerM, 0, 2 * Math.PI);
     if (isMine) {
-        ctx.strokeStyle = MY_AVATAR_STROKE_HEX;
+        if (isMuted) {
+            ctx.strokeStyle = MY_AVATAR_STROKE_HEX_MUTED;
+        } else {
+            ctx.strokeStyle = MY_AVATAR_STROKE_HEX_UNMUTED;
+        }
     } else {
         ctx.strokeStyle = OTHER_AVATAR_STROKE_HEX;
     }
