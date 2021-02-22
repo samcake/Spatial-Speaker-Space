@@ -21,6 +21,9 @@ function updateCanvas() {
         for (const circleInfo of SCALE_ARC_INFO) {
             ctx.strokeStyle = circleInfo.color;
             let circleRadiusM = circleInfo.radius;
+            if (circleRadiusM === 0) {
+                continue;
+            }
             let circleRadiusPX = PIXELS_PER_METER * circleRadiusM;
             ctx.beginPath();
             ctx.arc(mainCanvas.width / 2, mainCanvas.height / 2, circleRadiusPX, 0, 2 * Math.PI);

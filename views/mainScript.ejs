@@ -218,14 +218,18 @@
         }
 
         let myUserData = allUserData.find((element) => { return element.providedUserID === myProvidedUserID; });
-        let usersSittingInMySeat = allUserData.filter((userData) => {
-            return myUserData &&
-            myUserData.position &&
-            userData.position &&
-            userData.providedUserID !== myProvidedUserID &&
-            Math.abs(myUserData.position.x - userData.position.x) < CLOSE_ENOUGH_M &&
-            Math.abs(myUserData.position.y - userData.position.y) < CLOSE_ENOUGH_M;
-        });
+        let usersSittingInMySeat = [];
+        // Everyone can sit at (0, 0), so we don't want to check for collisions in that case.
+        if (myUserData && myUserData.position && myUserData.position.x !== 0 && myUserData.position.y !== 0) {
+                usersSittingInMySeat = allUserData.filter((userData) => {
+                return myUserData &&
+                myUserData.position &&
+                userData.position &&
+                userData.providedUserID !== myProvidedUserID &&
+                Math.abs(myUserData.position.x - userData.position.x) < CLOSE_ENOUGH_M &&
+                Math.abs(myUserData.position.y - userData.position.y) < CLOSE_ENOUGH_M;
+            });
+        }
         let mustReposition = false;
         if (usersSittingInMySeat.length > 0 || (gotNewHiFiUser && !receivedInitialOtherUserDataFromHiFi) || allAlone) {
             if (usersSittingInMySeat.length > 0) {
