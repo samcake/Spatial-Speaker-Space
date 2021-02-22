@@ -34,11 +34,11 @@ function updateCanvas() {
     }
 
     let myUserData = allUserData.find((element) => { return element.providedUserID === myProvidedUserID; });
-    if (!myUserData || !myUserData.position || !VIRTUAL_SPACE_DIMENSIONS_M.x || !VIRTUAL_SPACE_DIMENSIONS_M.y) {
+    if (!myUserData || !myUserData.position || !VIRTUAL_SPACE_DIMENSIONS_PER_SIDE_M) {
         return;
     }
 
-    const PIXELS_PER_METER = Math.round(Math.min(mainCanvas.width, mainCanvas.height) / VIRTUAL_SPACE_DIMENSIONS_M.x);
+    const PIXELS_PER_METER = Math.round(Math.min(mainCanvas.width, mainCanvas.height) / VIRTUAL_SPACE_DIMENSIONS_PER_SIDE_M);
 
     for (const currentUserData of allUserData) {
         if (!currentUserData.position || !currentUserData.orientationEuler ||
@@ -47,9 +47,9 @@ function updateCanvas() {
         }
 
         let positionInCanvasSpace = {
-            "x": Math.round(linearScale(currentUserData.position.x, -VIRTUAL_SPACE_DIMENSIONS_M.x / 2, VIRTUAL_SPACE_DIMENSIONS_M.x / 2, 0, mainCanvas.width)),
+            "x": Math.round(linearScale(currentUserData.position.x, -VIRTUAL_SPACE_DIMENSIONS_PER_SIDE_M / 2, VIRTUAL_SPACE_DIMENSIONS_PER_SIDE_M / 2, 0, mainCanvas.width)),
             // We "reverse" the last two terms here because "-y" in canvas space is "+y" in mixer space.
-            "y": Math.round(linearScale(currentUserData.position.y, -VIRTUAL_SPACE_DIMENSIONS_M.y / 2, VIRTUAL_SPACE_DIMENSIONS_M.y / 2, mainCanvas.height, 0))
+            "y": Math.round(linearScale(currentUserData.position.y, -VIRTUAL_SPACE_DIMENSIONS_PER_SIDE_M / 2, VIRTUAL_SPACE_DIMENSIONS_PER_SIDE_M / 2, mainCanvas.height, 0))
         };
 
         let isMine = currentUserData.providedUserID === myProvidedUserID;
@@ -70,21 +70,25 @@ function updateCanvas() {
                 ctx.fillText(`${circleRadiusM}m`, positionInCanvasSpace.x - circleRadiusPX + CIRCLE_LABEL_PADDING_PX, positionInCanvasSpace.y);
                 ctx.textAlign = "end";
                 ctx.fillText(`${circleRadiusM}m`, positionInCanvasSpace.x + circleRadiusPX - CIRCLE_LABEL_PADDING_PX, positionInCanvasSpace.y);
-                ctx.closePath();
             }
         }
-
-        ctx.fillStyle = hexColorFromString(currentUserData.providedUserID);
+        
+        let userHexColor = hexColorFromString(currentUserData.providedUserID);        
+        ctx.strokeStyle = "#000000";
+        ctx.lineWidth = 2.0;
+        ctx.fillStyle = userHexColor;
         ctx.translate(positionInCanvasSpace.x, positionInCanvasSpace.y);
         let amtToRotate = currentUserData.orientationEuler.yawDegrees * Math.PI / 180;
         ctx.rotate(amtToRotate);
         ctx.beginPath();
         ctx.arc(0, 0, USER_RADIUS_M * PIXELS_PER_METER, 0, 2 * Math.PI);
+        ctx.stroke();
+        ctx.fill();
         if (!currentUserData.isSpeaker) {
+            ctx.beginPath();
             ctx.arc(0, -(USER_RADIUS_M + 0.1) * PIXELS_PER_METER, USER_RADIUS_M / 4 * PIXELS_PER_METER, 0, 2 * Math.PI);
         }
         ctx.fill();
-        ctx.closePath();
         ctx.rotate(-amtToRotate);
         ctx.translate(-positionInCanvasSpace.x, -positionInCanvasSpace.y);
     }
@@ -96,13 +100,13 @@ function maybeDrawDebugCircles() {
         return;
     }
 
-    const PIXELS_PER_METER = Math.round(Math.min(mainCanvas.width, mainCanvas.height) / VIRTUAL_SPACE_DIMENSIONS_M.x);
+    const PIXELS_PER_METER = Math.round(Math.min(mainCanvas.width, mainCanvas.height) / VIRTUAL_SPACE_DIMENSIONS_PER_SIDE_M);
     ctx.fillStyle = "#00FF00";
 
     let positionInCanvasSpace = {
-        "x": Math.round(linearScale(0, -VIRTUAL_SPACE_DIMENSIONS_M.x / 2, VIRTUAL_SPACE_DIMENSIONS_M.x / 2, 0, mainCanvas.width)),
+        "x": Math.round(linearScale(0, -VIRTUAL_SPACE_DIMENSIONS_PER_SIDE_M / 2, VIRTUAL_SPACE_DIMENSIONS_PER_SIDE_M / 2, 0, mainCanvas.width)),
         // We "reverse" the last two terms here because "-y" in canvas space is "+y" in mixer space.
-        "y": Math.round(linearScale(0, -VIRTUAL_SPACE_DIMENSIONS_M.y / 2, VIRTUAL_SPACE_DIMENSIONS_M.y / 2, mainCanvas.height, 0))
+        "y": Math.round(linearScale(0, -VIRTUAL_SPACE_DIMENSIONS_PER_SIDE_M / 2, VIRTUAL_SPACE_DIMENSIONS_PER_SIDE_M / 2, mainCanvas.height, 0))
     };
     
     ctx.translate(positionInCanvasSpace.x, positionInCanvasSpace.y);
@@ -112,7 +116,6 @@ function maybeDrawDebugCircles() {
     ctx.arc(0, 0, USER_RADIUS_M * PIXELS_PER_METER, 0, 2 * Math.PI);
     ctx.arc(0, -(USER_RADIUS_M + 0.1) * PIXELS_PER_METER, USER_RADIUS_M / 4 * PIXELS_PER_METER, 0, 2 * Math.PI);
     ctx.fill();
-    ctx.closePath();
     ctx.rotate(-amtToRotate);
     ctx.translate(-positionInCanvasSpace.x, -positionInCanvasSpace.y);
 }
@@ -123,7 +126,8 @@ function updateCanvasDimensions() {
     mainCanvas.width = dimension;
     mainCanvas.height = dimension;
 
-    mainCanvas.style.left = `${dimension}px`;
+    mainCanvas.style.left = `${window.innerWidth / 2 - dimension / 2}px`;
     mainCanvas.style.width = `${dimension}px`;
     mainCanvas.style.height = `${dimension}px`;
 }
+updateCanvasDimensions();

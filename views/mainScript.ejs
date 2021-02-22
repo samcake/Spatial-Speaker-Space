@@ -13,7 +13,6 @@
     connectDisconnectButton.addEventListener("click", connectToHiFi);
     connectDisconnectButton.disabled = false;
     let toggleInputMuteButton = document.querySelector('.toggleInputMuteButton');
-    toggleInputMuteButton.addEventListener("click", toggleInputMute);
     let outputAudioEl = document.querySelector(`.outputAudioEl`);
     let toggleOutputMuteButton = document.querySelector('.toggleOutputMuteButton');
     toggleOutputMuteButton.addEventListener("click", toggleOutputMute);
@@ -46,11 +45,8 @@
         return "#" + "000000".substring(0, 6 - color.length) + color;
     }
 
-    const CONNECTION_TIMESTAMP = connectionTimestamp;
-    const VIRTUAL_SPACE_DIMENSIONS_M = {
-        "x": 10.0,
-        "y": 10.0
-    };
+    const MY_CONNECTION_TIMESTAMP = parseInt('<%- JSON.stringify(connectionTimestamp) %>');
+    const VIRTUAL_SPACE_DIMENSIONS_PER_SIDE_M = 10.0;
 
     function updateMyPositionAndOrientation(targetPosition, targetOrientation) {
         if (!hifiCommunicator) {
@@ -91,7 +87,7 @@
     const AUDIENCE_RADIUS_M = 2.0;
     const SPEAKER_RADIUS_M = 0.5;
     function positionSelfInCrowd() {
-        console.log(`${allUserData.length} users present, including ourselves.\n${speakerCount} speakers.\n${audienceCount} audience members.`);
+        console.log(`${allUserData.length} user(s) present, including ourselves.\n${speakerCount} speaker(s).\n${audienceCount} audience member(s).`);
 
         let foundOpenSpot = false;
         let currentCircleDivisions = 1;
@@ -119,7 +115,7 @@
                     if (orientationYawDegrees < 0) {
                         orientationYawDegrees += 360;
                     }
-                    let computedOrientation = new HighFidelityAudio.OrientationEuler3D({ "pitchDegrees": 0, "yawDegrees": orientationYawDegrees, "rollDegrees": 0 });
+                    let computedOrientation = new HighFidelityAudio.OrientationEuler3D({ "pitchDegrees": 0, "yawDegrees": Math.round((orientationYawDegrees + Number.EPSILON) * 100) / 100, "rollDegrees": 0 });
                     updateMyPositionAndOrientation(currentPotentialPosition, computedOrientation);
                     console.log(`Found an open spot at ${JSON.stringify(currentPotentialPosition)} with orientation ${JSON.stringify(computedOrientation)}.`);
                     foundOpenSpot = true;
@@ -133,15 +129,9 @@
         }
     }
 
-    function onNewHiFiUserDataReceived(receivedHiFiAudioAPIDataArray) {
+    async function onNewHiFiUserDataReceived(receivedHiFiAudioAPIDataArray) {
         let mustUpdateCanvas = false;
         let gotNewHiFiUser = false;
-        let bootedFromSeat = false;
-
-        let myUserData = allUserData.find((element) => { return element.providedUserID === myProvidedUserID; });
-        if (!myUserData) {
-            console.error(`Couldn't find \`myUserData\` inside \`allUserData\`!`);
-        }
 
         for (let i = 0; i < receivedHiFiAudioAPIDataArray.length; i++) {
             let currentDataFromServer = receivedHiFiAudioAPIDataArray[i];
@@ -194,7 +184,6 @@
                         mustUpdateCanvas = true;
                     }
                 }
-
             } else {
                 console.log(`New HiFi User! Provided ID: ${currentProvidedUserID}`);
                 gotNewHiFiUser = true;
@@ -214,15 +203,66 @@
             }
         }
 
-        let usersSittingInMySeat = allUserData.filter((userData) => { return userData.providedUserID !== myProvidedUserID && Math.abs(myUserData.position.x - userData.position.x) < CLOSE_ENOUGH_M && Math.abs(myUserData.position.y - userData.position.y) < CLOSE_ENOUGH_M; })
-        if (usersSittingInMySeat.length > 0 || (gotNewHiFiUser && !receivedInitialOtherUserDataFromHiFi)) {
+        let allAlone = false;
+        if (!receivedInitialOtherUserDataFromHiFi && receivedHiFiAudioAPIDataArray.length === 1 && receivedHiFiAudioAPIDataArray[0].providedUserID === myProvidedUserID) {
+            console.log("We're the only one here!");
+            allAlone = true;
+            receivedInitialOtherUserDataFromHiFi = true;
+        }
+
+        let myUserData = allUserData.find((element) => { return element.providedUserID === myProvidedUserID; });
+        let usersSittingInMySeat = allUserData.filter((userData) => {
+            return myUserData &&
+            myUserData.position &&
+            userData.position &&
+            userData.providedUserID !== myProvidedUserID &&
+            Math.abs(myUserData.position.x - userData.position.x) < CLOSE_ENOUGH_M &&
+            Math.abs(myUserData.position.y - userData.position.y) < CLOSE_ENOUGH_M;
+        });
+        let mustReposition = false;
+        if (usersSittingInMySeat.length > 0 || (gotNewHiFiUser && !receivedInitialOtherUserDataFromHiFi) || allAlone) {
             if (usersSittingInMySeat.length > 0) {
-                console.warn(`Someone else was sitting in our seat! Let's recompute our position.`);
+                console.warn(`There's another user in our seat! Checking to see if we were here first...`);
+                let olderConnectionTimestamp;
+                let timestampValid = false;
+                for (userInMySeat of usersSittingInMySeat) {
+                    let otherConnectionTimestamp;
+                    if (userInMySeat.connectionTimestamp) {
+                        otherConnectionTimestamp = userInMySeat.connectionTimestamp
+                    } else {
+                        try {
+                            otherConnectionTimestamp = await fetch(`/spatial-speaker-space/get-connection-age?providedUserID=${userData.providedUserID}&spaceName=${spaceName}`);
+                        } catch (e) {
+                            continue;
+                        }
+                        try {
+                            otherConnectionTimestamp = await otherConnectionTimestamp.json().connectionTimestamp;
+                            userInMySeat.connectionTimestamp = otherConnectionTimestamp;
+                        } catch (e) {
+                            continue;
+                        }
+                    }
+                    if (otherConnectionTimestamp && otherConnectionTimestamp < MY_CONNECTION_TIMESTAMP) {
+                        olderConnectionTimestamp = otherConnectionTimestamp;
+                        timestampValid = true;
+                        break;
+                    }
+                }
+                if (olderConnectionTimestamp && timestampValid) {
+                    console.warn(`Someone else with an older connection was sitting in our seat!\nTheir timestamp: ${olderConnectionTimestamp}\nOur timestamp  : ${MY_CONNECTION_TIMESTAMP}\nLet's recompute our position.`);
+                    mustReposition = true;
+                } else if (timestampValid) {
+                    console.warn(`We were here first, so we're staying put.`);
+                }
             }
-            if (gotNewHiFiUser && !receivedInitialOtherUserDataFromHiFi)) {
+            if (gotNewHiFiUser && !receivedInitialOtherUserDataFromHiFi) {
                 receivedInitialOtherUserDataFromHiFi = true;
+                mustReposition = true;
             }
-            positionSelfInCrowd();
+
+            if (allAlone || mustReposition) {
+                positionSelfInCrowd();
+            }
         }
 
         if (mustUpdateCanvas) {
@@ -246,6 +286,7 @@
     let speakerCount = 0;
     let audienceCount = 0;
     let receivedInitialOtherUserDataFromHiFi = false;
+    let muteButtonHookedUp = false;
     async function connectToHiFi() {
         // Disable the Connect button after the user clicks it so we don't double-connect.
         connectDisconnectButton.disabled = true;
@@ -274,50 +315,6 @@
             initialHiFiAudioAPIData: initialHiFiAudioAPIData,
             transmitRateLimitTimeoutMS: 10,
         });
-        await hifiCommunicator.setInputAudioMediaStream(audioMediaStream);
-
-        allUserData = [];
-        receivedInitialOtherUserDataFromHiFi = false;
-        speakerCount = 0;
-        audienceCount = 0;
-
-        // Connect to the HiFi Audio API server!
-        try {
-            let response = await hifiCommunicator.connectToHiFiAudioAPIServer('<%- hiFiJWT %>');
-            myProvidedUserID = response.audionetInitResponse.user_id;
-            allUserData.push(new SpeakerSpaceUserData({
-                "providedUserID": myProvidedUserID,
-                "isSpeaker": IS_SPEAKER
-            }));
-            if (IS_SPEAKER) {
-                speakerCount++;
-                positionSelfInCrowd();
-            } else {
-                setInputMute(true);
-                audienceCount++;
-            }
-            console.log(`My Provided User ID: ${myProvidedUserID}`);
-        } catch (e) {
-            console.error(`Error connecting to High Fidelity:\n${JSON.stringify(e)}`);
-            connectDisconnectButton.disabled = false;
-            toggleInputMuteButton.classList.add("toggleInputMuteButton--disabled");
-            connectDisconnectButton.innerHTML = `Connection error. Retry?`;
-            return;
-        }
-
-        updateCanvasDimensions();
-
-        // Show the user that we're connected by changing the text on the button.
-        connectDisconnectButton.removeEventListener("click", connectToHiFi);
-        connectDisconnectButton.addEventListener("click", disconnectFromHiFi);
-        connectDisconnectButton.innerHTML = `Disconnect`;
-        connectDisconnectButton.disabled = false;
-        toggleInputMuteButton.classList.remove("toggleInputMuteButton--disabled");
-
-        // Set the `srcObject` on our `audio` DOM element to the final, mixed audio stream from the High Fidelity Audio API Server.
-        outputAudioEl.srcObject = hifiCommunicator.getOutputAudioMediaStream();
-        // We explicitly call `play()` here because certain browsers won't play the newly-set stream automatically.
-        outputAudioEl.play();
 
         // Set up a new User Data Subscription to get User Data updates from the server.
         let newUserDataSubscription = new HighFidelityAudio.UserDataSubscription({
@@ -334,6 +331,53 @@
         });
         // Actually add the newly-constructed Data Subscription to the list of our Data Subscriptions on our `HiFiCommunicator`.
         hifiCommunicator.addUserDataSubscription(newUserDataSubscription);
+
+        allUserData = [];
+        receivedInitialOtherUserDataFromHiFi = false;
+        speakerCount = 0;
+        audienceCount = 0;
+
+        // Connect to the HiFi Audio API server!
+        try {
+            let response = await hifiCommunicator.connectToHiFiAudioAPIServer('<%- hiFiJWT %>');
+
+            myProvidedUserID = response.audionetInitResponse.user_id;
+            allUserData.push(new SpeakerSpaceUserData({
+                "providedUserID": myProvidedUserID,
+                "isSpeaker": IS_SPEAKER
+            }));
+            if (IS_SPEAKER) {
+                speakerCount++;
+                await hifiCommunicator.setInputAudioMediaStream(audioMediaStream);
+                if (!muteButtonHookedUp) {                    
+                    toggleInputMuteButton.addEventListener("click", toggleInputMute);
+                    muteButtonHookedUp = true;
+                }
+                toggleInputMuteButton.classList.remove("toggleInputMuteButton--disabled");
+            } else {
+                setInputMute(true);
+                audienceCount++;
+                toggleInputMuteButton.classList.add("toggleInputMuteButton--disabled");
+            }
+            console.log(`My Provided User ID: ${myProvidedUserID}`);
+        } catch (e) {
+            console.error(`Error connecting to High Fidelity:\n${JSON.stringify(e)}`);
+            connectDisconnectButton.disabled = false;
+            toggleInputMuteButton.classList.add("toggleInputMuteButton--disabled");
+            connectDisconnectButton.innerHTML = `Connection error. Retry?`;
+            return;
+        }
+
+        // Show the user that we're connected by changing the text on the button.
+        connectDisconnectButton.removeEventListener("click", connectToHiFi);
+        connectDisconnectButton.addEventListener("click", disconnectFromHiFi);
+        connectDisconnectButton.innerHTML = `Disconnect`;
+        connectDisconnectButton.disabled = false;
+
+        // Set the `srcObject` on our `audio` DOM element to the final, mixed audio stream from the High Fidelity Audio API Server.
+        outputAudioEl.srcObject = hifiCommunicator.getOutputAudioMediaStream();
+        // We explicitly call `play()` here because certain browsers won't play the newly-set stream automatically.
+        outputAudioEl.play();
     }
 
     let isMuted = false;

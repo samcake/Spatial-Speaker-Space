@@ -65,6 +65,7 @@ async function createNewSpace(spaceName) {
 
     spaceID = spaceJSON["space-id"];
     spaceNameToIDMap.set(spaceName, spaceID);
+    return spaceID;
 }
 
 let spaceNameToIDMap = new Map();
@@ -76,18 +77,20 @@ app.get('/spatial-speaker-space/speaker', async (req, res) => {
     if (spaceNameToIDMap.has(spaceName)) {
         spaceID = spaceNameToIDMap.get(spaceName);
     } else {
-        await createNewSpace(spaceName);
+        spaceID = await createNewSpace(spaceName);
     }
-    console.log(`The HiFi Space ID associated with Space Name \`${spaceName}\` is \`${spaceID}\`.`);
 
     let providedUserID = "speaker-";
     providedUserID += req.query.username || `${uppercaseFirstLetter(ADJECTIVES[Math.floor(Math.random() * ADJECTIVES.length)])}${uppercaseFirstLetter(NOUNS[Math.floor(Math.random() * NOUNS.length)])}`;
     providedUserID += Math.floor(Math.random() * Math.floor(1000));
     let hiFiJWT = await generateHiFiJWT(providedUserID, spaceID, false);
+
     let timestamp = Date.now();
     providedUserIDAtSpaceNameToConnectionTimestampMap.set(`${providedUserID}@${spaceName}`, timestamp);
 
-    res.render('index', { timestamp: Date.now(), providedUserID, hiFiJWT, spaceName, isSpeaker: true });
+    console.log(`${timestamp}: \`${providedUserID}\` connected to the HiFi Space \`${spaceName}\` with ID \`${spaceID}\`.`);
+
+    res.render('index', { connectionTimestamp: Date.now(), providedUserID, hiFiJWT, spaceName, isSpeaker: true });
 });
 
 app.get('/spatial-speaker-space/audience', async (req, res) => {
@@ -97,9 +100,8 @@ app.get('/spatial-speaker-space/audience', async (req, res) => {
     if (spaceNameToIDMap.has(spaceName)) {
         spaceID = spaceNameToIDMap.get(spaceName);
     } else {
-        await createNewSpace(spaceName);
+        spaceID = await createNewSpace(spaceName);
     }
-    console.log(`The HiFi Space ID associated with Space Name \`${spaceName}\` is \`${spaceID}\`.`);
     
     let providedUserID = "audience-";
     providedUserID += req.query.username || `${uppercaseFirstLetter(ADJECTIVES[Math.floor(Math.random() * ADJECTIVES.length)])}${uppercaseFirstLetter(NOUNS[Math.floor(Math.random() * NOUNS.length)])}`;
@@ -108,6 +110,8 @@ app.get('/spatial-speaker-space/audience', async (req, res) => {
 
     let timestamp = Date.now();
     providedUserIDAtSpaceNameToConnectionTimestampMap.set(`${providedUserID}@${spaceName}`, timestamp);
+
+    console.log(`${timestamp}: \`${providedUserID}\` connected to the HiFi Space \`${spaceName}\` with ID \`${spaceID}\`.`);
     
     res.render('index', { connectionTimestamp: timestamp, providedUserID, hiFiJWT, spaceName, isSpeaker: false });
 });
@@ -116,11 +120,20 @@ app.get('/spatial-speaker-space/get-connection-age', (req, res) => {
     let providedUserID = req.query.providedUserID;
     let spaceName = req.query.spaceName;
 
-    res.json({
+    if (!providedUserID || !spaceName) {
+        return res.status(500).send();
+    }
+
+    let timestamp = null;
+    if (providedUserIDAtSpaceNameToConnectionTimestampMap.has(`${providedUserID}@${spaceName}`)) {
+        timestamp = providedUserIDAtSpaceNameToConnectionTimestampMap.get(`${providedUserID}@${spaceName}`)
+    }
+
+    return res.json({
         "providedUserID": providedUserID,
         "spaceName": spaceName,
-        "connectionTimestamp": providedUserIDAtSpaceNameToConnectionTimestampMap.get(`${providedUserID}@${spaceName}`)
-    }).send();
+        "connectionTimestamp": timestamp
+    });
 });
 
 let adminJWT;
