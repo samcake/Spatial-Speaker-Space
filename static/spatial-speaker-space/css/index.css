@@ -79,6 +79,55 @@ p {
     background-image: url('/spatial-speaker-space/images/red-headphones-with-x.svg');
 }
 
+.participantsFAB {
+    display: flex;
+    position: fixed;
+    bottom: 12px;
+    right: 12px;
+    width: 56px;
+    height: 56px;
+    border-radius: 56px;
+    background-repeat: no-repeat;
+    background-size: 32px 32px;
+    background-position: center center;
+    background-color: #000000;
+    background-image: url('/spatial-speaker-space/images/people.svg');
+    justify-content: center;
+    align-items: flex-end;
+}
+
+.participantsFAB:hover {
+    cursor: pointer;
+}
+
+.numParticipants {
+    width: 100%;
+    text-align: center;
+    color: #FFFFFF;
+    user-select: none;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 18px;
+    line-height: 20px;
+    background-color: #000000;
+    border-radius: 20px;
+    height: 20px;
+    position: relative;
+    top: 8px;
+}
+
+.participantsContainer {
+    width: 200px;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    bottom: 80px;
+    right: 12px;
+    background-color: #030303;
+    color: white;
+    padding: 12px;
+}
+
 .displayNone {
     display: none;
 }

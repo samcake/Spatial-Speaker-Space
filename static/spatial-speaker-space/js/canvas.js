@@ -33,7 +33,7 @@ function maybeDrawScaleArcs() {
     }
 }
 
-function drawAvatarBase({ isMine, userData, avatarRadiusM, userHexColor, positionInCanvasSpace }) {
+function drawAvatarBase({ isMine, userData, avatarRadiusM, positionInCanvasSpace }) {
     ctx.translate(positionInCanvasSpace.x, positionInCanvasSpace.y);
     let amtToRotate = userData.orientationEuler.yawDegrees * Math.PI / 180;
     ctx.rotate(amtToRotate);
@@ -43,15 +43,15 @@ function drawAvatarBase({ isMine, userData, avatarRadiusM, userHexColor, positio
         ctx.beginPath();
         ctx.arc(0, -avatarRadiusM * DIRECTION_CLOUD_RADIUS_MULTIPLIER * pxPerM, avatarRadiusM * DIRECTION_CLOUD_RADIUS_MULTIPLIER * pxPerM, 0, Math.PI, false);
         let grad = ctx.createLinearGradient(0, 0, 0, -avatarRadiusM * DIRECTION_CLOUD_RADIUS_MULTIPLIER * pxPerM);
-        grad.addColorStop(0.0, userHexColor);
-        grad.addColorStop(1.0, userHexColor + "00");
+        grad.addColorStop(0.0, userData.hexColor);
+        grad.addColorStop(1.0, userData.hexColor + "00");
         ctx.fillStyle = grad;
         ctx.fill();
         ctx.closePath();
     }
 
     ctx.lineWidth = AVATAR_STROKE_WIDTH_PX;
-    ctx.fillStyle = userHexColor;
+    ctx.fillStyle = userData.hexColor;
     ctx.beginPath();
     ctx.arc(0, 0, avatarRadiusM * pxPerM, 0, 2 * Math.PI);
     if (isMine) {
@@ -70,7 +70,7 @@ function drawAvatarBase({ isMine, userData, avatarRadiusM, userHexColor, positio
     ctx.translate(-positionInCanvasSpace.x, -positionInCanvasSpace.y);
 }
 
-function drawAvatarLabel({ isMine, userData, userHexColor, positionInCanvasSpace }) {
+function drawAvatarLabel({ isMine, userData, positionInCanvasSpace }) {
     let text;
     if (isMine) {
         text = MY_AVATAR_LABEL;
@@ -89,16 +89,16 @@ function drawAvatarLabel({ isMine, userData, userHexColor, positionInCanvasSpace
     }
 
     ctx.font = MY_AVATAR_LABEL_FONT;
-    ctx.fillStyle = getConstrastingTextColor(hexToRGB(userHexColor));
+    ctx.fillStyle = getConstrastingTextColor(hexToRGB(userData.hexColor));
     ctx.textAlign = "center";
 
     ctx.fillText(text, positionInCanvasSpace.x, positionInCanvasSpace.y + MY_AVATAR_LABEL_Y_OFFSET_PX);
 }
 
-function drawVolumeBubble({ userData, userHexColor, avatarRadiusM, positionInCanvasSpace }) {
+function drawVolumeBubble({ userData, avatarRadiusM, positionInCanvasSpace }) {
     ctx.beginPath();
     ctx.arc(positionInCanvasSpace.x, positionInCanvasSpace.y, linearScale(userData.volumeDecibels, MIN_VOLUME_DB, MAX_VOLUME_DB, avatarRadiusM, avatarRadiusM * MAX_VOLUME_DB_AVATAR_RADIUS_MULTIPLIER) * pxPerM, 0, 2 * Math.PI);
-    ctx.fillStyle = userHexColor;
+    ctx.fillStyle = userData.hexColor;
     ctx.fill();
     ctx.closePath();
 }
@@ -124,10 +124,9 @@ function drawAvatar({ userData }) {
         avatarRadiusM = AUDIENCE_AVATAR_RADIUS_M;
     }
 
-    let userHexColor = hexColorFromString(userData.providedUserID);
-    drawVolumeBubble({ userData, userHexColor, avatarRadiusM, positionInCanvasSpace });
-    drawAvatarBase({ isMine, userData, userHexColor, avatarRadiusM, positionInCanvasSpace });
-    drawAvatarLabel({ isMine, userData, userHexColor, positionInCanvasSpace });
+    drawVolumeBubble({ userData, avatarRadiusM, positionInCanvasSpace });
+    drawAvatarBase({ isMine, userData, avatarRadiusM, positionInCanvasSpace });
+    drawAvatarLabel({ isMine, userData, positionInCanvasSpace });
 }
 
 function updateCanvas() {

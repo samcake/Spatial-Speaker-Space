@@ -18,6 +18,8 @@
     let outputAudioEl = document.querySelector(`.outputAudioEl`);
     let toggleOutputMuteButton = document.querySelector('.toggleOutputMuteButton');
     toggleOutputMuteButton.addEventListener("click", toggleOutputMute);
+    let participantsFAB = document.querySelector('.participantsFAB');
+    participantsFAB.addEventListener('click', toggleParticipantsContainerVisibility);
 
     function updateMyPositionAndOrientation(targetPosition, targetOrientation) {
         if (!hifiCommunicator) {
@@ -107,6 +109,50 @@
         }
     }
 
+    const numParticipants = document.querySelector('.numParticipants');
+    function incrementSpeakerCount() {
+        speakerCount++;
+        numParticipants.innerHTML = audienceCount + speakerCount;
+    }
+
+    function incrementAudienceCount() {
+        audienceCount++;
+        numParticipants.innerHTML = audienceCount + speakerCount;
+        updateParticipantsContainerInnerHTML();
+    }
+
+    function resetParticipantsCount() {
+        audienceCount = 0;
+        speakerCount = 0;
+        numParticipants.innerHTML = audienceCount + speakerCount;
+        updateParticipantsContainerInnerHTML();
+    }
+
+    function updateParticipantsContainerInnerHTML() {
+        participantsContainer.innerHTML = ``;
+
+        let speakersContainer = document.createElement('div');
+        speakersContainer.innerHTML = `<h3>Speakers (${speakerCount})</h3>`;
+
+        let audienceContainer = document.createElement('div');
+        audienceContainer.innerHTML = `<h3>Audience (${audienceCount})</h3>`;
+
+        for (const userData of allUserData) {
+            let participant = document.createElement('p');
+            console.log(userData.providedUserID)
+            participant.innerHTML = userData.providedUserID;
+            participant.style.color = userData.hexColor;
+            if (userData.isSpeaker) {
+                speakersContainer.appendChild(participant);
+            } else {
+                audienceContainer.appendChild(participant);
+            }
+        }
+
+        participantsContainer.appendChild(speakersContainer);
+        participantsContainer.appendChild(audienceContainer);
+    }
+
     async function onNewHiFiUserDataReceived(receivedHiFiAudioAPIDataArray) {
         let mustUpdateCanvas = false;
         let gotNewHiFiUser = false;
@@ -180,9 +226,9 @@
                     volumeDecibels: currentDataFromServer.volumeDecibels,
                 }));
                 if (isSpeaker) {
-                    speakerCount++;
+                    incrementSpeakerCount();
                 } else {
-                    audienceCount++;
+                    incrementAudienceCount();
                 }
                 mustUpdateCanvas = true;
             }
@@ -266,6 +312,7 @@
             this.orientationEuler = data.orientationEuler;
             this.isSpeaker = data.isSpeaker;
             this.volumeDecibels = data.volumeDecibels;
+            this.hexColor = hexColorFromString(this.providedUserID);
         }
     }
 
@@ -326,6 +373,7 @@
         receivedInitialOtherUserDataFromHiFi = false;
         speakerCount = 0;
         audienceCount = 0;
+        resetParticipantsCount();
 
         // Connect to the HiFi Audio API server!
         try {
@@ -337,7 +385,7 @@
                 "isSpeaker": IS_SPEAKER
             }));
             if (IS_SPEAKER) {
-                speakerCount++;
+                incrementSpeakerCount();
                 await hifiCommunicator.setInputAudioMediaStream(audioMediaStream);
                 if (!muteButtonHookedUp) {                    
                     toggleInputMuteButton.addEventListener("click", toggleInputMute);
@@ -346,7 +394,7 @@
                 toggleInputMuteButton.classList.remove("toggleInputMuteButton--disabled");
             } else {
                 setInputMute(true);
-                audienceCount++;
+                incrementAudienceCount();
                 toggleInputMuteButton.classList.add("toggleInputMuteButton--disabled");
             }
             console.log(`My Provided User ID: ${myProvidedUserID}`);
@@ -406,6 +454,12 @@
         }
     }
 
+    const participantsContainer = document.querySelector('.participantsContainer');
+    function toggleParticipantsContainerVisibility() {
+        updateParticipantsContainerInnerHTML();
+        participantsContainer.classList.toggle("displayNone");
+    }
+
     function disconnectFromHiFi() {
         console.log(`Disconnecting from High Fidelity Audio API Servers...`);
 
@@ -422,6 +476,7 @@
         }
         hifiCommunicator = null;
         allUserData = [];
+        resetParticipantsCount();
         
         window.requestAnimationFrame(updateCanvas);
     }
