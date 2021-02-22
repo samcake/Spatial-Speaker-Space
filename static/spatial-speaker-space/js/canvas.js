@@ -64,11 +64,9 @@ function updateCanvas() {
         }
         ctx.stroke();
         ctx.fill();
-        if (!currentUserData.isSpeaker) {
-            ctx.beginPath();
-            ctx.arc(0, -(USER_RADIUS_M + ORIENTATION_CIRCLE_OFFSET_M) * PIXELS_PER_METER, USER_RADIUS_M / 4 * PIXELS_PER_METER, 0, 2 * Math.PI);
-            ctx.fill();
-        }
+        ctx.beginPath();
+        ctx.arc(0, -(USER_RADIUS_M + ORIENTATION_CIRCLE_OFFSET_M) * PIXELS_PER_METER, USER_RADIUS_M / 4 * PIXELS_PER_METER, 0, 2 * Math.PI);
+        ctx.fill();
         ctx.rotate(-amtToRotate);
         ctx.translate(-positionInCanvasSpace.x, -positionInCanvasSpace.y);
     }
