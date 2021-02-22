@@ -81,7 +81,7 @@ app.get('/spatial-speaker-space/speaker', async (req, res) => {
     }
 
     let providedUserID = "speaker-";
-    providedUserID += req.query.username || `${uppercaseFirstLetter(ADJECTIVES[Math.floor(Math.random() * ADJECTIVES.length)])}${uppercaseFirstLetter(NOUNS[Math.floor(Math.random() * NOUNS.length)])}`;
+    providedUserID += req.query.username || `${uppercaseFirstLetter(ADJECTIVES[Math.floor(Math.random() * ADJECTIVES.length)])} ${uppercaseFirstLetter(NOUNS[Math.floor(Math.random() * NOUNS.length)])}`;
     providedUserID += Math.floor(Math.random() * Math.floor(1000));
     let hiFiJWT = await generateHiFiJWT(providedUserID, spaceID, false);
 
@@ -104,7 +104,7 @@ app.get('/spatial-speaker-space/audience', async (req, res) => {
     }
     
     let providedUserID = "audience-";
-    providedUserID += req.query.username || `${uppercaseFirstLetter(ADJECTIVES[Math.floor(Math.random() * ADJECTIVES.length)])}${uppercaseFirstLetter(NOUNS[Math.floor(Math.random() * NOUNS.length)])}`;
+    providedUserID += req.query.username || `${uppercaseFirstLetter(ADJECTIVES[Math.floor(Math.random() * ADJECTIVES.length)])} ${uppercaseFirstLetter(NOUNS[Math.floor(Math.random() * NOUNS.length)])}`;
     providedUserID += Math.floor(Math.random() * Math.floor(1000));
     let hiFiJWT = await generateHiFiJWT(providedUserID, spaceID, false);
 

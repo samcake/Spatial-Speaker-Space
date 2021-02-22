@@ -9,6 +9,8 @@
 <% } %>
 
 <script>
+    const MY_CONNECTION_TIMESTAMP = parseInt('<%- JSON.stringify(connectionTimestamp) %>');
+
     let connectDisconnectButton = document.querySelector('.connectDisconnectButton');
     connectDisconnectButton.addEventListener("click", connectToHiFi);
     connectDisconnectButton.disabled = false;
@@ -16,36 +18,6 @@
     let outputAudioEl = document.querySelector(`.outputAudioEl`);
     let toggleOutputMuteButton = document.querySelector('.toggleOutputMuteButton');
     toggleOutputMuteButton.addEventListener("click", toggleOutputMute);
-
-    function clamp(value, min, max) {
-        return Math.min(Math.max(value, min), max);
-    }
-
-    function linearScale(factor, minInput, maxInput, minOutput, maxOutput) {
-        factor = clamp(factor, minInput, maxInput);
-
-        return minOutput + (maxOutput - minOutput) *
-            (factor - minInput) / (maxInput - minInput);
-    }
-
-    function getRandomFloat(min, max) {
-        return Math.random() * (max - min) + min;
-    }
-
-    function hexColorFromString(string) {
-        let hash = 0;
-        for (let i = 0; i < string.length; i++) {
-            hash = string.charCodeAt(i) + ((hash << 5) - hash); // eslint-disable-line
-        }
-
-        let color = (hash & 0x00FFFFFF)
-            .toString(16)
-            .toUpperCase();
-
-        return "#" + "000000".substring(0, 6 - color.length) + color;
-    }
-
-    const MY_CONNECTION_TIMESTAMP = parseInt('<%- JSON.stringify(connectionTimestamp) %>');
 
     function updateMyPositionAndOrientation(targetPosition, targetOrientation) {
         if (!hifiCommunicator) {
