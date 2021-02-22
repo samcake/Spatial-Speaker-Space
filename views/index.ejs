@@ -37,10 +37,15 @@
     <input class="hiFiGainSlider" disabled="true" type="range" min="1" max="21" value="11" step="1">
 </body>
 
+<script src="/spatial-speaker-space/js/three.min.js"></script>
 <script src="/spatial-speaker-space/js/constants.js"></script>
 <script src="/spatial-speaker-space/js/utilities.js"></script>
 <script src="/spatial-speaker-space/js/canvas.js"></script>
+<!--
+Gotta use a custom, locally-built version of the Library until the latest version is released.
 <script src="https://hifi-spatial-audio-api.s3.amazonaws.com/releases/latest/HighFidelityAudio-latest.js"></script>
+-->
+<script src="/spatial-speaker-space/js/HighFidelityAudio-latest.js?1"></script>
 <%- include('mainScript', { hiFiJWT, connectionTimestamp}); %>
 <script src="/spatial-speaker-space/js/controls.js"></script>
 

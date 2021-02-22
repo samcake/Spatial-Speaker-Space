@@ -28,7 +28,7 @@
     hiFiGainSlider.addEventListener('input', onHiFiGainChanged);
     document.addEventListener('click', closeParticipantsContainer);
 
-    function updateMyPositionAndOrientation(targetPosition, targetOrientation) {
+    function updateMyPositionAndOrientation(targetPosition, targetYawOrientationDegrees) {
         if (!hifiCommunicator) {
             return;
         }
@@ -39,26 +39,38 @@
             return;
         }
 
+        let dataToTransmit = {};
+
         if (!myUserData.position) {
             myUserData.position = {};
         }
 
-        if (!myUserData.orientationEuler) {
-            myUserData.orientationEuler = {};
+        if (!myUserData.orientationQuat) {
+            myUserData.orientationQuat = new HighFidelityAudio.OrientationQuat3D();
         }
 
         if (targetPosition) {
             Object.assign(myUserData.position, targetPosition);
+            dataToTransmit["position"] = {};
+            Object.assign(dataToTransmit["position"], myUserData.position);
         }
 
-        if (targetOrientation) {
-            Object.assign(myUserData.orientationEuler, targetOrientation);
+        if (typeof (targetYawOrientationDegrees) === "number") {
+            myUserData.yawOrientationDegrees = targetYawOrientationDegrees;
+            // In ThreeJS, by default, up is +y, right is +x, and into the screen is +z.
+            // In HiFi, by default,    up is +z, right is +x, and into the screen is +y.
+            // We change ThreeJS to match HiFi here.
+            THREE.Object3D.DefaultUp = new THREE.Vector3(0, 0, 1);
+            let threeQuat = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, 0, myUserData.yawOrientationDegrees * Math.PI / 180, THREE_EULER_ORDER));
+            myUserData.orientationQuat.w = threeQuat._w;
+            myUserData.orientationQuat.x = threeQuat._x;
+            myUserData.orientationQuat.y = threeQuat._y;
+            myUserData.orientationQuat.z = threeQuat._z;
+            dataToTransmit["orientationQuat"] = {};
+            Object.assign(dataToTransmit["orientationQuat"], myUserData.orientationQuat);
         }
 
-        console.log(hifiCommunicator.updateUserDataAndTransmit({
-            position: myUserData.position,
-            orientationEuler: myUserData.orientationEuler,
-        }));
+        console.log(hifiCommunicator.updateUserDataAndTransmit(dataToTransmit));
 
         window.requestAnimationFrame(updateCanvas);
     }
@@ -75,9 +87,8 @@
                 "x": 0,
                 "y": 0
             };
-            let computedOrientation = new HighFidelityAudio.OrientationEuler3D({ "pitchDegrees": 0, "yawDegrees": 0, "rollDegrees": 0 });
-            updateMyPositionAndOrientation(currentPotentialPosition, computedOrientation);
             console.log(`Found an open spot at ${JSON.stringify(currentPotentialPosition)} with orientation ${JSON.stringify(computedOrientation)}.`);
+            updateMyPositionAndOrientation(currentPotentialPosition, 0);
         } else {
             while (!foundOpenSpot) {
                 for (let theta = 0; theta < 2 * Math.PI; theta += ((2 * Math.PI) / currentCircleDivisions)) {
@@ -101,9 +112,9 @@
                         if (orientationYawDegrees < 0) {
                             orientationYawDegrees += 360;
                         }
-                        let computedOrientation = new HighFidelityAudio.OrientationEuler3D({ "pitchDegrees": 0, "yawDegrees": Math.round((orientationYawDegrees + Number.EPSILON) * 100) / 100, "rollDegrees": 0 });
-                        updateMyPositionAndOrientation(currentPotentialPosition, computedOrientation);
-                        console.log(`Found an open spot at ${JSON.stringify(currentPotentialPosition)} with orientation ${JSON.stringify(computedOrientation)}.`);
+                        let computedYawOrientationDegrees = Math.round((orientationYawDegrees + Number.EPSILON) * 100) / 100;
+                        console.log(`Found an open spot at ${JSON.stringify(currentPotentialPosition)} with yaw orientation ${JSON.stringify(computedYawOrientationDegrees)} degrees.`);
+                        updateMyPositionAndOrientation(currentPotentialPosition, computedYawOrientationDegrees);
                         foundOpenSpot = true;
                         break;
                     } else {
@@ -191,28 +202,40 @@
                     }
                 }
 
-                if (currentDataFromServer.orientationEuler) {
-                    if (!currentLocalUserData.orientationEuler) {
-                        currentLocalUserData.orientationEuler = new HighFidelityAudio.OrientationEuler3D();
+                if (currentDataFromServer.orientationQuat) {
+                    if (!currentLocalUserData.orientationQuat) {
+                        currentLocalUserData.orientationQuat = new HighFidelityAudio.OrientationQuat3D();
                     }
 
-                    if (typeof (currentDataFromServer.orientationEuler.pitchDegrees) === "number") {
-                        currentLocalUserData.orientationEuler.pitchDegrees = currentDataFromServer.orientationEuler.pitchDegrees;
+                    let updatedQuat = false;
 
-                        mustUpdateCanvas = true;
+                    if (typeof (currentDataFromServer.orientationQuat.w) === "number") {
+                        currentLocalUserData.orientationQuat.w = currentDataFromServer.orientationQuat.w;
+                        updatedQuat = true;
                     }
-                    if (typeof (currentDataFromServer.orientationEuler.yawDegrees) === "number") {
-                        if (isMine && currentLocalUserData.orientationEuler.yawDegrees !== currentDataFromServer.orientationEuler.yawDegrees) {
-                            // TODO: What is going on here!?
-                            // https://highfidelity.atlassian.net/browse/HIFI-316
-                            console.warn(`We sent our \`yawDegrees\` as ${currentLocalUserData.orientationEuler.yawDegrees}°, but the server is telling us our \`yawDegrees\` is ${currentDataFromServer.orientationEuler.yawDegrees}°!\nIgnoring server data...`);
-                        } else {
-                            currentLocalUserData.orientationEuler.yawDegrees = currentDataFromServer.orientationEuler.yawDegrees;
+
+                    if (typeof (currentDataFromServer.orientationQuat.x) === "number") {
+                        currentLocalUserData.orientationQuat.x = currentDataFromServer.orientationQuat.x;
+                        updatedQuat = true;
+                    }
+
+                    if (typeof (currentDataFromServer.orientationQuat.y) === "number") {
+                        currentLocalUserData.orientationQuat.y = currentDataFromServer.orientationQuat.y;
+                        updatedQuat = true;
+                    }
+
+                    if (typeof (currentDataFromServer.orientationQuat.z) === "number") {
+                        currentLocalUserData.orientationQuat.z = currentDataFromServer.orientationQuat.z;
+                        updatedQuat = true;
+                    }
+
+                    if (updatedQuat) {
+                        let yawOrientationDegrees = getYawOrientationDegreesFromQuat(currentLocalUserData.orientationQuat);
+                        if (isMine && typeof (currentLocalUserData.yawOrientationDegrees) === "number" && currentLocalUserData.yawOrientationDegrees !== yawOrientationDegrees) {
+                            console.warn(`We supplied a \`yawOrientationDegrees\` of ${currentLocalUserData.yawOrientationDegrees} degrees, but the server gave us ${yawOrientationDegrees} degrees!`);
                         }
-                        mustUpdateCanvas = true;
-                    }
-                    if (typeof (currentDataFromServer.orientationEuler.rollDegrees) === "number") {
-                        currentLocalUserData.orientationEuler.rollDegrees = currentDataFromServer.orientationEuler.rollDegrees;
+                        currentLocalUserData.yawOrientationDegrees = yawOrientationDegrees;
+
                         mustUpdateCanvas = true;
                     }
                 }
@@ -225,11 +248,17 @@
             } else {
                 console.log(`New HiFi User! Provided ID: ${currentProvidedUserID}`);
                 gotNewHiFiUser = true;
-                let isSpeaker = currentProvidedUserID.indexOf("speaker-") === 0
+                let isSpeaker = currentProvidedUserID.indexOf("speaker-") === 0;
+                let orientationQuat = currentDataFromServer.orientationQuat;
+                let yawOrientationDegrees;
+                if (orientationQuat) {
+                    yawOrientationDegrees = getYawOrientationDegreesFromQuat(orientationQuat);
+                }
                 allUserData.push(new SpeakerSpaceUserData({
                     providedUserID: currentProvidedUserID,
                     position: currentDataFromServer.position,
-                    orientationEuler: currentDataFromServer.orientationEuler,
+                    orientationQuat: orientationQuat,
+                    yawOrientationDegrees: yawOrientationDegrees,
                     isSpeaker: isSpeaker,
                     volumeDecibels: currentDataFromServer.volumeDecibels,
                 }));
@@ -317,7 +346,8 @@
         constructor(data) {
             this.providedUserID = data.providedUserID;
             this.position = data.position;
-            this.orientationEuler = data.orientationEuler;
+            this.yawOrientationDegrees = data.yawOrientationDegrees;
+            this.orientationQuat = data.orientationQuat;
             this.isSpeaker = data.isSpeaker;
             this.volumeDecibels = data.volumeDecibels;
             this.hiFiGain = data.hiFiGain || 1.0;
@@ -350,18 +380,10 @@
             }
         }
 
-        // Set up the initial data for our user.
-        // They'll be standing at the origin, facing "forward".
-        let initialHiFiAudioAPIData = new HighFidelityAudio.HiFiAudioAPIData({
-            position: new HighFidelityAudio.Point3D({ "x": 0, "y": 0, "z": 0 }),
-            orientationEuler: new HighFidelityAudio.OrientationEuler3D({ "pitchDegrees": 0, "yawDegrees": 0, "rollDegrees": 0 })
-        });
-
         HighFidelityAudio.HiFiLogger.setHiFiLogLevel(HighFidelityAudio.HiFiLogLevel.Debug);
 
         // Set up our `HiFiCommunicator` object, supplying our media stream and initial user data.
         hifiCommunicator = new HighFidelityAudio.HiFiCommunicator({
-            initialHiFiAudioAPIData: initialHiFiAudioAPIData,
             transmitRateLimitTimeoutMS: 10,
         });
 
@@ -372,7 +394,7 @@
             // There are other components we could subscribe to here, but we're only subscribing to Volume data updates.
             "components": [
                 HighFidelityAudio.AvailableUserDataSubscriptionComponents.Position,
-                HighFidelityAudio.AvailableUserDataSubscriptionComponents.OrientationEuler,
+                HighFidelityAudio.AvailableUserDataSubscriptionComponents.OrientationQuat,
                 HighFidelityAudio.AvailableUserDataSubscriptionComponents.VolumeDecibels
             ],
             // See above for the definition of `onNewHiFiUserDataReceived`.

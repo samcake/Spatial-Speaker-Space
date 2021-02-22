@@ -34,8 +34,12 @@ function maybeDrawScaleArcs() {
 }
 
 function drawAvatarBase({ isMine, userData, avatarRadiusM, positionInCanvasSpace }) {
+    if (typeof (userData.yawOrientationDegrees) !== "number") {
+        return;
+    }
+
     ctx.translate(positionInCanvasSpace.x, positionInCanvasSpace.y);
-    let amtToRotate = userData.orientationEuler.yawDegrees * Math.PI / 180;
+    let amtToRotate = userData.yawOrientationDegrees * Math.PI / 180;
     ctx.rotate(amtToRotate);
     
     // Don't show orientation visualization if user is an audience member.
@@ -104,8 +108,7 @@ function drawVolumeBubble({ userData, avatarRadiusM, positionInCanvasSpace }) {
 }
 
 function drawAvatar({ userData }) {
-    if (!userData || !userData.position || !userData.orientationEuler ||
-        typeof (userData.position.x) !== "number" || typeof (userData.position.y) !== "number" || typeof (userData.orientationEuler.yawDegrees) !== "number") {
+    if (!userData || !userData.position || typeof (userData.position.x) !== "number" || typeof (userData.position.y) !== "number" || typeof (userData.yawOrientationDegrees) !== "number") {
         return;
     }
 
