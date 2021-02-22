@@ -20,6 +20,12 @@
     toggleOutputMuteButton.addEventListener("click", toggleOutputMute);
     let participantsFAB = document.querySelector('.participantsFAB');
     participantsFAB.addEventListener('click', toggleParticipantsContainerVisibility);
+    const participantsContainer = document.querySelector('.participantsContainer');
+    participantsContainer.addEventListener('click', (e) => { e.stopPropagation(); });
+    const hiFiGainSlider = document.querySelector('.hiFiGainSlider');
+    hiFiGainSlider.disabled = true;
+    hiFiGainSlider.addEventListener('input', onHiFiGainChanged);
+    document.addEventListener('click', closeParticipantsContainer);
 
     function updateMyPositionAndOrientation(targetPosition, targetOrientation) {
         if (!hifiCommunicator) {
@@ -113,6 +119,7 @@
     function incrementSpeakerCount() {
         speakerCount++;
         numParticipants.innerHTML = audienceCount + speakerCount;
+        updateParticipantsContainerInnerHTML();
     }
 
     function incrementAudienceCount() {
@@ -132,19 +139,19 @@
         participantsContainer.innerHTML = ``;
 
         let speakersContainer = document.createElement('div');
-        speakersContainer.innerHTML = `<h3>Speakers (${speakerCount})</h3>`;
+        speakersContainer.innerHTML = `<h3 class="speakersHeader">Speakers (${speakerCount})</h3>`;
 
         let audienceContainer = document.createElement('div');
-        audienceContainer.innerHTML = `<h3>Audience (${audienceCount})</h3>`;
+        audienceContainer.innerHTML = `<h3 class="audienceHeader">Audience (${audienceCount})</h3>`;
 
         for (const userData of allUserData) {
             let participant = document.createElement('p');
-            console.log(userData.providedUserID)
-            participant.innerHTML = userData.providedUserID;
             participant.style.color = userData.hexColor;
             if (userData.isSpeaker) {
+                participant.innerHTML = userData.providedUserID.replace('speaker-', '');
                 speakersContainer.appendChild(participant);
             } else {
+                participant.innerHTML = userData.providedUserID.replace('audience-', '');
                 audienceContainer.appendChild(participant);
             }
         }
@@ -312,6 +319,7 @@
             this.orientationEuler = data.orientationEuler;
             this.isSpeaker = data.isSpeaker;
             this.volumeDecibels = data.volumeDecibels;
+            this.hiFiGain = data.hiFiGain || 1.0;
             this.hexColor = hexColorFromString(this.providedUserID);
         }
     }
@@ -329,6 +337,7 @@
         connectDisconnectButton.disabled = true;
         connectDisconnectButton.innerHTML = `Connecting...`;
         toggleInputMuteButton.classList.add("toggleInputMuteButton--disabled");
+        hiFiGainSlider.disabled = true;
 
         // Get the audio media stream associated with the user's default audio input device.
         let audioMediaStream;
@@ -403,6 +412,7 @@
             connectDisconnectButton.disabled = false;
             toggleInputMuteButton.classList.add("toggleInputMuteButton--disabled");
             connectDisconnectButton.innerHTML = `Connection error. Retry?`;
+            hiFiGainSlider.disabled = true;
             return;
         }
 
@@ -411,6 +421,7 @@
         connectDisconnectButton.addEventListener("click", disconnectFromHiFi);
         connectDisconnectButton.innerHTML = `Disconnect`;
         connectDisconnectButton.disabled = false;
+        hiFiGainSlider.disabled = false;
 
         // Set the `srcObject` on our `audio` DOM element to the final, mixed audio stream from the High Fidelity Audio API Server.
         outputAudioEl.srcObject = hifiCommunicator.getOutputAudioMediaStream();
@@ -454,10 +465,34 @@
         }
     }
 
-    const participantsContainer = document.querySelector('.participantsContainer');
-    function toggleParticipantsContainerVisibility() {
+    function closeParticipantsContainer() {
+        participantsContainer.classList.add("displayNone");
+    }
+
+    function toggleParticipantsContainerVisibility(e) {
         updateParticipantsContainerInnerHTML();
         participantsContainer.classList.toggle("displayNone");
+        e.stopPropagation();
+    }
+
+    function onHiFiGainChanged() {
+        if (!hifiCommunicator) {
+            return;
+        }
+
+        let myUserData = allUserData.find((element) => { return element.providedUserID === myProvidedUserID; });
+        if (!myUserData) {
+            console.error(`Couldn't find \`myUserData\` inside \`allUserData\`!`);
+            return;
+        }
+
+        myUserData.hiFiGain = hiFiGainSlider.value;
+
+        console.log(`User changed their HiFiGain to ${myUserData.hiFiGain}`);
+
+        console.log(hifiCommunicator.updateUserDataAndTransmit({
+            hiFiGain: myUserData.hiFiGain,
+        }));
     }
 
     function disconnectFromHiFi() {
@@ -467,6 +502,7 @@
         connectDisconnectButton.addEventListener("click", connectToHiFi);
         connectDisconnectButton.disabled = false;
         connectDisconnectButton.innerHTML = `Connect`;
+        hiFiGainSlider.disabled = true;
 
         toggleInputMuteButton.classList.add("toggleInputMuteButton--disabled");
         isMuted = false;
