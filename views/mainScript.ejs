@@ -341,10 +341,12 @@
 
         // Get the audio media stream associated with the user's default audio input device.
         let audioMediaStream;
-        try {
-            audioMediaStream = await navigator.mediaDevices.getUserMedia({ audio: HighFidelityAudio.getBestAudioConstraints(), video: false });
-        } catch (e) {
-            return;
+        if (IS_SPEAKER) {
+            try {
+                audioMediaStream = await navigator.mediaDevices.getUserMedia({ audio: HighFidelityAudio.getBestAudioConstraints(), video: false });
+            } catch (e) {
+                return;
+            }
         }
 
         // Set up the initial data for our user.
@@ -495,7 +497,7 @@
             myUserData.hiFiGain = logarithmicScale(sliderValue, 1, 21, 1, 110) / 10;
         }
 
-        currentHiFiGainValue.innerHTML = `HiFi Gain: ${myUserData.hiFiGain.toFixed(2)}`;
+        currentHiFiGainValue.innerHTML = `Input Gain: ${myUserData.hiFiGain.toFixed(2)}`;
         console.log(`User changed their HiFiGain to ${myUserData.hiFiGain}`);
 
         console.log(hifiCommunicator.updateUserDataAndTransmit({
