@@ -140,21 +140,6 @@ p {
     max-width: 75%;
 }
 
-.hiFiGainSlider::-webkit-slider-thumb,
-.hiFiGainSlider::-moz-range-thumb {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 24px;
-    height: 24px;
-    border: 0;
-    background-repeat: no-repeat;
-    background-size: 20px 20px;
-    background-position: center center;
-    background-color: #000000;
-    background: url('/spatial-speaker-space/images/volume.svg');
-    cursor: pointer;
-}
-
 .currentHiFiGainValue {
     position: fixed;
     bottom: 36px;
