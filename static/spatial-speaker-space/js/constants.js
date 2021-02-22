@@ -1,0 +1,2 @@
+const USER_RADIUS_M = 0.3;
+const DEFAULT_USER_COLOR_HEX = "#FF0000";

@@ -1,0 +1,84 @@
+body {
+    background-color: #222222;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+p {
+    color: white;
+    margin: 0;
+}
+
+.mainCanvas {
+    position: fixed;
+    top: 60px;
+    z-index: 2;
+    pointer-events: none;
+}
+
+.controlsContainer {
+    position: fixed;
+    width: 100%;
+    height: 40px;
+    padding: 10px;
+    left: 0;
+    top: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-evenly;
+    background-color: #111111;
+    z-index: 100;
+}
+
+.controlsContainer > div {
+    display: flex;
+    flex-direction: column;
+}
+
+.description {
+    margin: 0 12px;
+}
+
+.connectDisconnectButton {
+    width: 200px;
+    height: 100%;
+    margin: 0 12px;
+}
+
+.toggleInputMuteButton,
+.toggleOutputMuteButton {
+    width: 40px;
+    height: 40px;
+    background-repeat: no-repeat;
+    background-size: contain;
+    background-position: center center;
+    margin: 0 12px;
+}
+
+.toggleInputMuteButton:hover,
+.toggleOutputMuteButton:hover {
+    cursor: pointer;
+}
+
+.toggleInputMuteButton {
+    background-image: url('/spatial-speaker-space/images/white-mic.svg');
+}
+
+.toggleInputMuteButton--muted {
+    background-image: url('/spatial-speaker-space/images/red-mic-with-cross.svg');
+}
+
+.toggleInputMuteButton--disabled {
+    background-image: url('/spatial-speaker-space/images/grey-mic.svg');
+}
+
+.toggleOutputMuteButton {
+    background-image: url('/spatial-speaker-space/images/white-headphones.svg');
+}
+
+.toggleOutputMuteButton--muted {
+    background-image: url('/spatial-speaker-space/images/red-headphones-with-x.svg');
+}
+
+.displayNone {
+    display: none;
+}

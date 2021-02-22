@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>Spatial Speaker Space</title>
+
+    <link rel="stylesheet" href="./css/index.css">
+</head>
+
+<body style="width: 100%; height: 100%; margin: 0; padding: 0;">
+    <canvas class="mainCanvas"></canvas>
+    <div class="controlsContainer">
+        <div class="description">
+            <% if (isSpeaker) { %>
+            <p>Spatial Speaker Space - Speaker</p>
+            <%} else { %>
+            <p>Spatial Speaker Space - Audience</p>
+            <% } %>
+            <p>@<%- providedUserID %> in <%- spaceName %></p>
+        </div>
+        <button class="connectDisconnectButton" disabled="true">Connect</button>
+        <div class="toggleInputMuteButton toggleInputMuteButton--disabled"></div>
+        <div class="toggleOutputMuteButton"></div>
+        <audio autoplay class="outputAudioEl"></audio>
+    </div>
+</body>
+
+<script src="/spatial-speaker-space/js/constants.js"></script>
+<script src="/spatial-speaker-space/js/canvas.js"></script>
+<script src="https://hifi-spatial-audio-api.s3.amazonaws.com/releases/latest/HighFidelityAudio-latest.js"></script>
+<%- include('mainScript', { hiFiJWT, connectionTimestamp}); %>
+
+</html>
