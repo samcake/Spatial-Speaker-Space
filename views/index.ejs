@@ -3,7 +3,11 @@
 
 <head>
     <meta charset="utf-8">
-    <title>Spatial Speaker Space</title>
+    <% if (isSpeaker) { %>
+    <title>Spatial Speaker Space - Speaker</title>
+    <%} else { %>
+    <title>Spatial Speaker Space - Audience</title>
+    <% } %>
 
     <link rel="stylesheet" href="./css/index.css">
 </head>

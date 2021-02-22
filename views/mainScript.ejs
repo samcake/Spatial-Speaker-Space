@@ -46,7 +46,7 @@
     }
 
     const MY_CONNECTION_TIMESTAMP = parseInt('<%- JSON.stringify(connectionTimestamp) %>');
-    const VIRTUAL_SPACE_DIMENSIONS_PER_SIDE_M = 10.0;
+    const VIRTUAL_SPACE_DIMENSIONS_PER_SIDE_M = 12.5;
 
     function updateMyPositionAndOrientation(targetPosition, targetOrientation) {
         if (!hifiCommunicator) {
@@ -83,9 +83,6 @@
         window.requestAnimationFrame(updateCanvas);
     }
 
-    const CLOSE_ENOUGH_M = 0.005;
-    const AUDIENCE_RADIUS_M = 2.0;
-    const SPEAKER_RADIUS_M = 0.5;
     function positionSelfInCrowd() {
         console.log(`${allUserData.length} user(s) present, including ourselves.\n${speakerCount} speaker(s).\n${audienceCount} audience member(s).`);
 
