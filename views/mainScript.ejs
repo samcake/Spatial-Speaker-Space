@@ -162,6 +162,12 @@
                         mustUpdateCanvas = true;
                     }
                 }
+
+                // Only update volume data for speakers, not audience members.
+                if (currentLocalUserData.isSpeaker && typeof (currentDataFromServer.volumeDecibels) === "number") {
+                    currentLocalUserData.volumeDecibels = currentDataFromServer.volumeDecibels;
+                    mustUpdateCanvas = true;
+                }
             } else {
                 console.log(`New HiFi User! Provided ID: ${currentProvidedUserID}`);
                 gotNewHiFiUser = true;
@@ -170,7 +176,8 @@
                     providedUserID: currentProvidedUserID,
                     position: currentDataFromServer.position,
                     orientationEuler: currentDataFromServer.orientationEuler,
-                    isSpeaker: isSpeaker
+                    isSpeaker: isSpeaker,
+                    volumeDecibels: currentDataFromServer.volumeDecibels,
                 }));
                 if (isSpeaker) {
                     speakerCount++;
@@ -258,6 +265,7 @@
             this.position = data.position;
             this.orientationEuler = data.orientationEuler;
             this.isSpeaker = data.isSpeaker;
+            this.volumeDecibels = data.volumeDecibels;
         }
     }
 
