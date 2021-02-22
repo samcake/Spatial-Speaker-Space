@@ -59,7 +59,13 @@ function updateCanvas() {
         let amtToRotate = currentUserData.orientationEuler.yawDegrees * Math.PI / 180;
         ctx.rotate(amtToRotate);
         ctx.beginPath();
-        ctx.arc(0, 0, USER_RADIUS_M * PIXELS_PER_METER, 0, 2 * Math.PI);
+        let avatarRadius;
+        if (currentUserData.isSpeaker) {
+            avatarRadius = SPEAKER_AVATAR_RADIUS_M;
+        } else {
+            avatarRadius = AUDIENCE_AVATAR_RADIUS_M;
+        }
+        ctx.arc(0, 0, avatarRadius * PIXELS_PER_METER, 0, 2 * Math.PI);
         if (isMine) {
             ctx.strokeStyle = MY_AVATAR_STROKE_HEX;
         } else {
@@ -67,9 +73,12 @@ function updateCanvas() {
         }
         ctx.stroke();
         ctx.fill();
-        ctx.beginPath();
-        ctx.arc(0, -(USER_RADIUS_M + ORIENTATION_CIRCLE_OFFSET_M) * PIXELS_PER_METER, USER_RADIUS_M / 4 * PIXELS_PER_METER, 0, 2 * Math.PI);
-        ctx.fill();
+        // Don't show orientation bubble if user is an audience member.
+        if (currentUserData.isSpeaker) {
+            ctx.beginPath();
+            ctx.arc(0, -(avatarRadius + avatarRadius / ORIENTATION_CIRCLE_OFFSET_DIVISOR) * PIXELS_PER_METER, avatarRadius / 4 * PIXELS_PER_METER, 0, 2 * Math.PI);
+            ctx.fill();
+        }
         ctx.rotate(-amtToRotate);
         ctx.translate(-positionInCanvasSpace.x, -positionInCanvasSpace.y);
     }
