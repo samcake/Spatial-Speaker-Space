@@ -135,12 +135,12 @@ function drawAvatar({ userData }) {
 function updateCanvas() {
     ctx.clearRect(0, 0, mainCanvas.width, mainCanvas.height);
 
-    if (!allUserData) {
+    if (!allLocalUserData) {
         return;
     }
 
-    let myUserData = allUserData.find((element) => { return element.providedUserID === myProvidedUserID; });
-    let allOtherUserData = allUserData.filter((element) => { return element.providedUserID !== myProvidedUserID; });
+    let myUserData = allLocalUserData.find((element) => { return element.providedUserID === myProvidedUserID; });
+    let allOtherUserData = allLocalUserData.filter((element) => { return element.providedUserID !== myProvidedUserID; });
 
     updatePixelsPerMeter();
 

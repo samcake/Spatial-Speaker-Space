@@ -1,7 +1,7 @@
 const { default: SignJWT } = require('jose/jwt/sign');
 const express = require('express');
 const crypto = require('crypto');
-const auth = require('./auth.json');
+const auth = require('./auth.staging02.json');
 const fetch = require('node-fetch');
 const { ADJECTIVES, NOUNS } = require('./words');
 
@@ -21,7 +21,7 @@ function uppercaseFirstLetter(string) {
     return string.charAt(0).toUpperCase() + string.slice(1);
 }
 
-async function generateHiFiJWT(userID, spaceID, isAdmin) {
+async function generateHiFiJWT(userID, spaceName, isAdmin) {
     let hiFiJWT;
     try {
         let jwtArgs = {
@@ -29,8 +29,8 @@ async function generateHiFiJWT(userID, spaceID, isAdmin) {
             "app_id": APP_ID
         };
 
-        if (spaceID) {
-            jwtArgs["space_id"] = spaceID;
+        if (spaceName) {
+            jwtArgs["space_name"] = spaceName;
         }
 
         if (isAdmin) {
@@ -43,75 +43,42 @@ async function generateHiFiJWT(userID, spaceID, isAdmin) {
 
         return hiFiJWT;
     } catch (error) {
-        console.error(`Couldn't create JWT! Error:\n${error}`);
+        console.error(`Couldn't create JWT! Error:${error}`);
         return;
     }
 }
 
-async function createNewSpace(spaceName) {
-    let createSpaceResponse;
-    try {
-        createSpaceResponse = await fetch(`https://api.highfidelity.com/api/v1/spaces/create?token=${adminJWT}&name=${spaceName}`);
-    } catch (e) {
-        return res.status(500).send();
-    }
-
-    let spaceJSON;
-    try {
-        spaceJSON = await createSpaceResponse.json();
-    } catch (e) {
-        return res.status(500).send();
-    }
-
-    spaceID = spaceJSON["space-id"];
-    spaceNameToIDMap.set(spaceName, spaceID);
-    return spaceID;
-}
-
-let spaceNameToIDMap = new Map();
 let providedUserIDAtSpaceNameToConnectionTimestampMap = new Map();
 app.get('/spatial-speaker-space/speaker', async (req, res) => {
     let spaceName = req.query.spaceName || auth.HIFI_DEFAULT_SPACE_NAME;
 
-    let spaceID;
-    if (spaceNameToIDMap.has(spaceName)) {
-        spaceID = spaceNameToIDMap.get(spaceName);
-    } else {
-        spaceID = await createNewSpace(spaceName);
-    }
-
     let providedUserID = "speaker-";
     providedUserID += req.query.username || `${uppercaseFirstLetter(ADJECTIVES[Math.floor(Math.random() * ADJECTIVES.length)])} ${uppercaseFirstLetter(NOUNS[Math.floor(Math.random() * NOUNS.length)])}`;
     providedUserID += Math.floor(Math.random() * Math.floor(1000));
-    let hiFiJWT = await generateHiFiJWT(providedUserID, spaceID, false);
+
+    let hiFiJWT = await generateHiFiJWT(providedUserID, spaceName, false);
 
     let timestamp = Date.now();
     providedUserIDAtSpaceNameToConnectionTimestampMap.set(`${providedUserID}@${spaceName}`, timestamp);
 
-    console.log(`${timestamp}: \`${providedUserID}\` connected to the HiFi Space \`${spaceName}\` with ID \`${spaceID}\`.`);
+    console.log(`${timestamp}: \`${providedUserID}\` connected to the HiFi Space \`${spaceName}\`.`);
 
     res.render('index', { connectionTimestamp: Date.now(), providedUserID, hiFiJWT, spaceName, isSpeaker: true });
 });
 
 app.get('/spatial-speaker-space/audience', async (req, res) => {
     let spaceName = req.query.spaceName || auth.HIFI_DEFAULT_SPACE_NAME;
-
-    let spaceID;
-    if (spaceNameToIDMap.has(spaceName)) {
-        spaceID = spaceNameToIDMap.get(spaceName);
-    } else {
-        spaceID = await createNewSpace(spaceName);
-    }
     
     let providedUserID = "audience-";
     providedUserID += req.query.username || `${uppercaseFirstLetter(ADJECTIVES[Math.floor(Math.random() * ADJECTIVES.length)])} ${uppercaseFirstLetter(NOUNS[Math.floor(Math.random() * NOUNS.length)])}`;
     providedUserID += Math.floor(Math.random() * Math.floor(1000));
-    let hiFiJWT = await generateHiFiJWT(providedUserID, spaceID, false);
+
+    let hiFiJWT = await generateHiFiJWT(providedUserID, spaceName, false);
 
     let timestamp = Date.now();
     providedUserIDAtSpaceNameToConnectionTimestampMap.set(`${providedUserID}@${spaceName}`, timestamp);
 
-    console.log(`${timestamp}: \`${providedUserID}\` connected to the HiFi Space \`${spaceName}\` with ID \`${spaceID}\`.`);
+    console.log(`${timestamp}: \`${providedUserID}\` connected to the HiFi Space \`${spaceName}\`.`);
     
     res.render('index', { connectionTimestamp: timestamp, providedUserID, hiFiJWT, spaceName, isSpeaker: false });
 });
@@ -136,8 +103,6 @@ app.get('/spatial-speaker-space/get-connection-age', (req, res) => {
     });
 });
 
-let adminJWT;
 app.listen(PORT, async () => {
-    adminJWT = await generateHiFiJWT("example-admin", undefined, true);
     console.log(`Spatial Speaker Space is ready and listening at http://localhost:${PORT}\nSpeaker link: http://localhost:${PORT}/spatial-speaker-space/speaker\nAudience link: http://localhost:${PORT}/spatial-speaker-space/audience`)
 });
