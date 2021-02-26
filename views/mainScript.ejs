@@ -57,11 +57,7 @@
 
         if (typeof (targetYawOrientationDegrees) === "number") {
             myUserData.yawOrientationDegrees = targetYawOrientationDegrees;
-            // In ThreeJS, by default, up is +y, right is +x, and into the screen is +z.
-            // In HiFi, by default,    up is +z, right is +x, and into the screen is +y.
-            // We change ThreeJS to match HiFi here.
-            THREE.Object3D.DefaultUp = new THREE.Vector3(0, 0, 1);
-            let threeQuat = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, 0, myUserData.yawOrientationDegrees * Math.PI / 180, THREE_EULER_ORDER));
+            let threeQuat = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, myUserData.yawOrientationDegrees * Math.PI / 180, 0));
             myUserData.orientationQuat.w = threeQuat._w;
             myUserData.orientationQuat.x = threeQuat._x;
             myUserData.orientationQuat.y = threeQuat._y;
@@ -85,7 +81,7 @@
         if (circleRadius === 0) {
             let currentPotentialPosition = {
                 "x": 0,
-                "y": 0
+                "z": 0
             };
             console.log(`Found an open spot at ${JSON.stringify(currentPotentialPosition)} with orientation ${JSON.stringify(computedOrientation)}.`);
             updateMyPositionAndOrientation(currentPotentialPosition, 0);
@@ -94,20 +90,20 @@
                 for (let theta = 0; theta < 2 * Math.PI; theta += ((2 * Math.PI) / currentCircleDivisions)) {
                     let currentPotentialPosition = {
                         "x": (circleRadius) * Math.cos(theta),
-                        "y": (circleRadius) * Math.sin(theta)
+                        "z": (circleRadius) * Math.sin(theta)
                     };
 
                     currentPotentialPosition.x = Math.round((currentPotentialPosition.x + Number.EPSILON) * 100) / 100;
-                    currentPotentialPosition.y = Math.round((currentPotentialPosition.y + Number.EPSILON) * 100) / 100;
+                    currentPotentialPosition.z = Math.round((currentPotentialPosition.z + Number.EPSILON) * 100) / 100;
 
-                    if (positionsChecked.find((position) => { return currentPotentialPosition.x === position.x && currentPotentialPosition.y === position.y; })) {
+                    if (positionsChecked.find((position) => { return currentPotentialPosition.x === position.x && currentPotentialPosition.z === position.z; })) {
                         continue;
                     }
                     
-                    let occupied = allLocalUserData.find((element) => { return element.position && Math.abs(element.position.x - currentPotentialPosition.x) < CLOSE_ENOUGH_M && Math.abs(element.position.y - currentPotentialPosition.y) < CLOSE_ENOUGH_M; });
+                    let occupied = allLocalUserData.find((element) => { return element.position && Math.abs(element.position.x - currentPotentialPosition.x) < CLOSE_ENOUGH_M && Math.abs(element.position.z - currentPotentialPosition.z) < CLOSE_ENOUGH_M; });
 
                     if (!occupied) {
-                        let orientationYawRadians = Math.atan2(-currentPotentialPosition.x, -currentPotentialPosition.y);
+                        let orientationYawRadians = Math.atan2(-currentPotentialPosition.x, -currentPotentialPosition.z);
                         let orientationYawDegrees = orientationYawRadians * 180 / Math.PI;
                         if (orientationYawDegrees < 0) {
                             orientationYawDegrees += 360;
@@ -289,15 +285,17 @@
         let myUserData = allLocalUserData.find((element) => { return element.providedUserID === myProvidedUserID; });
         let usersSittingInMySeat = [];
         // Everyone can sit at (0, 0), so we don't want to check for collisions in that case.
-        if (myUserData && myUserData.position && myUserData.position.x !== 0 && myUserData.position.y !== 0) {
-                usersSittingInMySeat = allLocalUserData.filter((userData) => {
+        if (myUserData && myUserData.position && myUserData.position.x !== 0 && myUserData.position.z !== 0) {
+            usersSittingInMySeat = allLocalUserData.filter((userData) => {
                 return myUserData &&
-                myUserData.position &&
-                userData.position &&
-                userData.providedUserID !== myProvidedUserID &&
-                Math.abs(myUserData.position.x - userData.position.x) < CLOSE_ENOUGH_M &&
-                Math.abs(myUserData.position.y - userData.position.y) < CLOSE_ENOUGH_M;
+                    myUserData.position &&
+                    userData.position &&
+                    userData.providedUserID !== myProvidedUserID &&
+                    Math.abs(myUserData.position.x - userData.position.x) < CLOSE_ENOUGH_M &&
+                    Math.abs(myUserData.position.z - userData.position.z) < CLOSE_ENOUGH_M;
             });
+        } else {
+            mustUpdateCanvas = true;
         }
         let mustReposition = false;
         if (usersSittingInMySeat.length > 0 || (gotNewHiFiUser && !receivedInitialOtherUserDataFromHiFi) || allAlone) {
@@ -460,6 +458,8 @@
         // Set the `srcObject` on our `audio` DOM element to the final, mixed audio stream from the High Fidelity Audio API Server.
         outputAudioEl.srcObject = hifiCommunicator.getOutputAudioMediaStream();
         setOutputMute(false);
+
+        initWebSocketStuff();
     }
 
     let isMuted = false;
@@ -553,6 +553,8 @@
 
         toggleInputMuteButton.classList.add("toggleInputMuteButton--disabled");
         isMuted = false;
+
+        stopWebSocketStuff();
 
         if (hifiCommunicator) {
             hifiCommunicator.disconnectFromHiFiAudioAPIServer();

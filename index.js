@@ -1,8 +1,7 @@
 const { default: SignJWT } = require('jose/jwt/sign');
 const express = require('express');
 const crypto = require('crypto');
-const auth = require('./auth.staging02.json');
-const fetch = require('node-fetch');
+const auth = require('./auth.json');
 const { ADJECTIVES, NOUNS } = require('./words');
 
 // This is your "App ID" as obtained from the High Fidelity Audio API Developer Console. Do not share this string.
@@ -103,6 +102,49 @@ app.get('/spatial-speaker-space/get-connection-age', (req, res) => {
     });
 });
 
-app.listen(PORT, async () => {
+const http = require("http").createServer(app);
+
+const io = require("socket.io")(http, {
+    cors: {
+        origin: `http://localhost:${PORT}`,
+        methods: ["GET", "POST"]
+    }
+});
+
+io.sockets.on("error", (e) => {
+    console.error(e);
+});
+
+let spaceInfo = {};
+io.sockets.on("connection", (socket) => {
+    socket.on("addParticipant", (providedUserID, spaceName) => {
+        console.log(`In ${spaceName}, adding participant with ID \`${providedUserID}\`.`);
+        socket.join(spaceName);
+
+        if (!spaceInfo[spaceName]) {
+            spaceInfo[spaceName] = {
+                watcherProvidedUserIDToSocketIDMap: new Map(),
+            };
+        }
+
+        spaceInfo[spaceName].watcherProvidedUserIDToSocketIDMap.set(providedUserID, socket.id);
+    });
+
+    socket.on("removeParticipant", (providedUserID, spaceName) => {
+        if (!spaceInfo[spaceName]) {
+            return;
+        }
+
+        console.log(`In ${spaceName}, removing participant with ID \`${providedUserID}\`.`);
+
+        spaceInfo[spaceName].watcherProvidedUserIDToSocketIDMap.delete(providedUserID);
+
+        if (spaceInfo[spaceName].watcherProvidedUserIDToSocketIDMap.size === 0) {
+            delete spaceInfo[spaceName];
+        }
+    });
+});
+
+http.listen(PORT, async () => {
     console.log(`Spatial Speaker Space is ready and listening at http://localhost:${PORT}\nSpeaker link: http://localhost:${PORT}/spatial-speaker-space/speaker\nAudience link: http://localhost:${PORT}/spatial-speaker-space/audience`)
 });

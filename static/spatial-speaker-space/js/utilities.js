@@ -90,8 +90,8 @@ function getInitials(name) {
 }
 
 function getYawOrientationDegreesFromQuat(hiFiQuat) {
-    let threeEuler = new THREE.Euler().setFromQuaternion(new THREE.Quaternion(hiFiQuat.x, hiFiQuat.y, hiFiQuat.z, hiFiQuat.w), THREE_EULER_ORDER);
-    let yawOrientationDegrees = threeEuler.z * 180 / Math.PI;
+    let threeEuler = new THREE.Euler().setFromQuaternion(new THREE.Quaternion(hiFiQuat.x, hiFiQuat.y, hiFiQuat.z, hiFiQuat.w));
+    let yawOrientationDegrees = threeEuler.y * 180 / Math.PI;
     while (yawOrientationDegrees < 0) {
         yawOrientationDegrees += 360;
     }

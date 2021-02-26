@@ -21,6 +21,7 @@ function maybeDrawScaleArcs() {
             ctx.beginPath();
             ctx.arc(mainCanvas.width / 2, mainCanvas.height / 2, circleRadiusPX, 0, 2 * Math.PI);
             ctx.stroke();
+            ctx.textBaseline = "middle";
             ctx.textAlign = "center";
             ctx.fillText(`${circleRadiusM}m`, mainCanvas.width / 2, mainCanvas.height / 2 - circleRadiusPX - SCALE_ARC_LABEL_PADDING_PX);
             ctx.fillText(`${circleRadiusM}m`, mainCanvas.width / 2, mainCanvas.height / 2 + circleRadiusPX + SCALE_ARC_LABEL_PADDING_PX);
@@ -75,6 +76,9 @@ function drawAvatarBase({ isMine, userData, avatarRadiusM, positionInCanvasSpace
 }
 
 function drawAvatarLabel({ isMine, userData, positionInCanvasSpace }) {
+    ctx.translate(positionInCanvasSpace.x, positionInCanvasSpace.y + MY_AVATAR_LABEL_Y_OFFSET_PX);
+    let amtToRotateLabel = -amtToRotateCanvas;
+    ctx.rotate(amtToRotateLabel);
     let text;
     if (isMine) {
         text = MY_AVATAR_LABEL;
@@ -95,8 +99,11 @@ function drawAvatarLabel({ isMine, userData, positionInCanvasSpace }) {
     ctx.font = MY_AVATAR_LABEL_FONT;
     ctx.fillStyle = getConstrastingTextColor(hexToRGB(userData.hexColor));
     ctx.textAlign = "center";
+    ctx.textBaseline = "middle"; 
 
-    ctx.fillText(text, positionInCanvasSpace.x, positionInCanvasSpace.y + MY_AVATAR_LABEL_Y_OFFSET_PX);
+    ctx.fillText(text, 0, 0);
+    ctx.rotate(-amtToRotateLabel);
+    ctx.translate(-positionInCanvasSpace.x, -(positionInCanvasSpace.y + MY_AVATAR_LABEL_Y_OFFSET_PX));
 }
 
 function drawVolumeBubble({ userData, avatarRadiusM, positionInCanvasSpace }) {
@@ -108,14 +115,16 @@ function drawVolumeBubble({ userData, avatarRadiusM, positionInCanvasSpace }) {
 }
 
 function drawAvatar({ userData }) {
-    if (!userData || !userData.position || typeof (userData.position.x) !== "number" || typeof (userData.position.y) !== "number" || typeof (userData.yawOrientationDegrees) !== "number") {
+    if (!userData || !userData.position || typeof (userData.position.x) !== "number" || typeof (userData.position.z) !== "number" || typeof (userData.yawOrientationDegrees) !== "number") {
         return;
     }
 
+    ctx.translate(-mainCanvas.width / 2, -mainCanvas.height / 2);
+
     let positionInCanvasSpace = {
         "x": Math.round(linearScale(userData.position.x, -VIRTUAL_SPACE_DIMENSIONS_PER_SIDE_M / 2, VIRTUAL_SPACE_DIMENSIONS_PER_SIDE_M / 2, 0, mainCanvas.width)),
-        // We "reverse" the last two terms here because "-y" in canvas space is "+y" in mixer space.
-        "y": Math.round(linearScale(userData.position.y, -VIRTUAL_SPACE_DIMENSIONS_PER_SIDE_M / 2, VIRTUAL_SPACE_DIMENSIONS_PER_SIDE_M / 2, mainCanvas.height, 0))
+        // We "reverse" the last two terms here because "-thisAxis" in canvas space is "+thisAxis" in mixer space.
+        "y": Math.round(linearScale(userData.position.z, -VIRTUAL_SPACE_DIMENSIONS_PER_SIDE_M / 2, VIRTUAL_SPACE_DIMENSIONS_PER_SIDE_M / 2, mainCanvas.height, 0))
     };
 
     let isMine = userData.providedUserID === myProvidedUserID;
@@ -130,8 +139,12 @@ function drawAvatar({ userData }) {
     drawVolumeBubble({ userData, avatarRadiusM, positionInCanvasSpace });
     drawAvatarBase({ isMine, userData, avatarRadiusM, positionInCanvasSpace });
     drawAvatarLabel({ isMine, userData, positionInCanvasSpace });
+
+    ctx.translate(mainCanvas.width / 2, mainCanvas.height / 2);
 }
 
+let myUserData;
+let amtToRotateCanvas;
 function updateCanvas() {
     ctx.clearRect(0, 0, mainCanvas.width, mainCanvas.height);
 
@@ -139,26 +152,34 @@ function updateCanvas() {
         return;
     }
 
-    let myUserData = allLocalUserData.find((element) => { return element.providedUserID === myProvidedUserID; });
+    myUserData = allLocalUserData.find((element) => { return element.providedUserID === myProvidedUserID; });
     let allOtherUserData = allLocalUserData.filter((element) => { return element.providedUserID !== myProvidedUserID; });
 
     updatePixelsPerMeter();
+
+    amtToRotateCanvas = 0;
+    if (myUserData && typeof (myUserData.yawOrientationDegrees) === "number") {
+        amtToRotateCanvas = -1 * myUserData.yawOrientationDegrees * Math.PI / 180;
+    }
+    ctx.translate(mainCanvas.width / 2, mainCanvas.height / 2);
+    ctx.rotate(amtToRotateCanvas);
 
     for (const userData of allOtherUserData) {
         drawAvatar({ userData });
     }
 
     drawAvatar({ userData: myUserData });
+
+    ctx.rotate(-amtToRotateCanvas);
+    ctx.translate(-mainCanvas.width / 2, -mainCanvas.height / 2);
 }
 
 function updateCanvasDimensions() {
-    let dimension = Math.min(window.innerWidth, window.innerHeight);
+    mainCanvas.width = window.innerWidth;
+    mainCanvas.height = window.innerHeight - 60;
 
-    mainCanvas.width = dimension;
-    mainCanvas.height = dimension;
-
-    mainCanvas.style.left = `${window.innerWidth / 2 - dimension / 2}px`;
-    mainCanvas.style.width = `${dimension}px`;
-    mainCanvas.style.height = `${dimension}px`;
+    mainCanvas.style.left = `${window.innerWidth / 2 - mainCanvas.width / 2}px`;
+    mainCanvas.style.width = `${mainCanvas.width}px`;
+    mainCanvas.style.height = `${mainCanvas.height}px`;
 }
 updateCanvasDimensions();
