@@ -98,3 +98,48 @@ function getYawOrientationDegreesFromQuat(hiFiQuat) {
     yawOrientationDegrees = Math.round((yawOrientationDegrees + Number.EPSILON) * 100) / 100;
     return yawOrientationDegrees;
 }
+
+function easeInOutQuart(progressFraction) {
+    return progressFraction < 0.5 ? 8 * progressFraction * progressFraction * progressFraction * progressFraction : 1 - Math.pow(-2 * progressFraction + 2, 4) / 2;
+}
+
+function easeOutQuad(progressFraction) {
+    return 1 - (1 - progressFraction) * (1 - progressFraction);
+}
+
+function getDistanceBetween2DPoints(x1, y1, x2, y2) {
+    let xMovement = x2 - x1;
+    let yMovement = y2 - y1;
+
+    return Math.sqrt((xMovement *= xMovement) + (yMovement *= yMovement));
+}
+
+function randomFloatBetween(min, max) {
+    return (Math.random() * (max - min)) + min;
+}
+
+function generateUUID(trimBrackets) {
+    let i = 0;
+    let generatedUUID = "";
+    let baseString;
+    if (trimBrackets) {
+        baseString = '{xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx}';
+    } else {
+        baseString = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx';
+    }
+    while (i++ < 38) {
+        let c = baseString[i - 1], r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+        generatedUUID += (c == '-' || c == '4') ? c : v.toString(16)
+    }
+
+    return generatedUUID;
+}
+
+function rotateAroundPoint(cx, cy, x, y, angle) {
+    let radians = (Math.PI / 180) * angle,
+        cos = Math.cos(radians),
+        sin = Math.sin(radians),
+        nx = (cos * (x - cx)) + (sin * (y - cy)) + cx,
+        ny = (cos * (y - cy)) - (sin * (x - cx)) + cy;
+    return [nx, ny];
+}

@@ -27,7 +27,10 @@
         <div class="toggleInputMuteButton toggleInputMuteButton--disabled"></div>
         <div class="toggleOutputMuteButton"></div>
         <audio autoplay class="outputAudioEl"></audio>
+        <audio autoplay class="miscLocalAudio1"></audio>
+        <audio autoplay class="miscLocalAudio2"></audio>
     </div>
+    <div class="signalButtonContainer"><button class="signalButton signalButton--positive" aria-label="Positive Signal"></button><button class="signalButton signalButton--negative" aria-label="Negative Signal"></button></div>
     <div class="participantsContainer displayNone"></div>
     <div class="participantsFAB">
         <p class="numParticipants">0</p>
@@ -38,11 +41,14 @@
 </body>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/3.1.1/socket.io.js"></script>
-<script src="/spatial-speaker-space/js/three.min.js"></script>
 <script src="/spatial-speaker-space/js/constants.js"></script>
+<script src="/spatial-speaker-space/js/particles.js"></script>
+<script src="/spatial-speaker-space/js/SignalsController.js"></script>
+<script src="/spatial-speaker-space/js/three.min.js"></script>
 <script src="/spatial-speaker-space/js/utilities.js"></script>
 <script src="/spatial-speaker-space/js/canvas.js"></script>
-<script src="https://hifi-spatial-audio-api.s3.amazonaws.com/releases/latest/HighFidelityAudio-latest.js"></script>
+<script src="/spatial-speaker-space/js/HighFidelityAudio-latest.js"></script>
+<!-- <script src="https://hifi-spatial-audio-api.s3.amazonaws.com/releases/latest/HighFidelityAudio-latest.js"></script> -->
 <%- include('mainScript', { hiFiJWT, connectionTimestamp}); %>
 <script src="/spatial-speaker-space/js/websocketStuff.js"></script>
 <script src="/spatial-speaker-space/js/controls.js"></script>

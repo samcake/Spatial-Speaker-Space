@@ -53,6 +53,8 @@
             Object.assign(myUserData.position, targetPosition);
             dataToTransmit["position"] = {};
             Object.assign(dataToTransmit["position"], myUserData.position);
+
+            canvasRotationDegrees = Math.atan2(myUserData.position.x, -myUserData.position.z) * 180 / Math.PI;
         }
 
         if (typeof (targetYawOrientationDegrees) === "number") {
@@ -66,9 +68,7 @@
             Object.assign(dataToTransmit["orientationQuat"], myUserData.orientationQuat);
         }
 
-        console.log(hifiCommunicator.updateUserDataAndTransmit(dataToTransmit));
-
-        window.requestAnimationFrame(updateCanvas);
+        hifiCommunicator.updateUserDataAndTransmit(dataToTransmit);
     }
 
     function positionSelfInCrowd() {
@@ -205,7 +205,7 @@
                         mustUpdateCanvas = true;
                     }
                 }
-
+                
                 if (currentDataFromServer.orientationQuat) {
                     if (!currentLocalUserData.orientationQuat) {
                         currentLocalUserData.orientationQuat = new HighFidelityAudio.OrientationQuat3D();
@@ -239,6 +239,7 @@
                             console.warn(`We supplied a \`yawOrientationDegrees\` of ${currentLocalUserData.yawOrientationDegrees} degrees, but the server gave us ${yawOrientationDegrees} degrees!`);
                         }
                         currentLocalUserData.yawOrientationDegrees = yawOrientationDegrees;
+                        console.log(currentLocalUserData.yawOrientationDegrees)
 
                         mustUpdateCanvas = true;
                     }
@@ -341,10 +342,6 @@
             if (allAlone || mustReposition) {
                 positionSelfInCrowd();
             }
-        }
-
-        if (mustUpdateCanvas) {
-            window.requestAnimationFrame(updateCanvas);
         }
     }
 
@@ -562,8 +559,6 @@
         hifiCommunicator = null;
         allLocalUserData = [];
         resetParticipantsCount();
-        
-        window.requestAnimationFrame(updateCanvas);
     }
 
     function onUsersDisconnected(disconnectedUserData) {
@@ -580,14 +575,28 @@
                 return shouldStay;
             })
             console.log(`HiFi User left! Provided ID: ${userData.providedUserID}`);
-
-            window.requestAnimationFrame(updateCanvas);
         }
     }
 
+    let particleController = new ParticleController();
+    let lastNow = performance.now();
+    function physicsLoop() {
+        let now = performance.now();
+        let dt = now - lastNow;
+        lastNow = now;
+
+        particleController.updateAllParticles(now, dt);
+    }
+    setInterval(physicsLoop, PHYSICS.PHYSICS_TICKRATE_MS);
+
+    function drawLoop(timestamp) {
+        updateCanvas();
+        window.requestAnimationFrame(drawLoop);
+    }
+    window.requestAnimationFrame(drawLoop);
+
     window.onresize = () => {
         updateCanvasDimensions();
-        window.requestAnimationFrame(updateCanvas);
     };
     window.onbeforeunload = disconnectFromHiFi;
 </script>

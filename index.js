@@ -115,33 +115,14 @@ io.sockets.on("error", (e) => {
     console.error(e);
 });
 
-let spaceInfo = {};
 io.sockets.on("connection", (socket) => {
     socket.on("addParticipant", (providedUserID, spaceName) => {
         console.log(`In ${spaceName}, adding participant with ID \`${providedUserID}\`.`);
         socket.join(spaceName);
-
-        if (!spaceInfo[spaceName]) {
-            spaceInfo[spaceName] = {
-                watcherProvidedUserIDToSocketIDMap: new Map(),
-            };
-        }
-
-        spaceInfo[spaceName].watcherProvidedUserIDToSocketIDMap.set(providedUserID, socket.id);
     });
 
-    socket.on("removeParticipant", (providedUserID, spaceName) => {
-        if (!spaceInfo[spaceName]) {
-            return;
-        }
-
-        console.log(`In ${spaceName}, removing participant with ID \`${providedUserID}\`.`);
-
-        spaceInfo[spaceName].watcherProvidedUserIDToSocketIDMap.delete(providedUserID);
-
-        if (spaceInfo[spaceName].watcherProvidedUserIDToSocketIDMap.size === 0) {
-            delete spaceInfo[spaceName];
-        }
+    socket.on("addParticle", (providedUserID, spaceName, particleData) => {
+        socket.to(spaceName).emit("requestParticleAdd", providedUserID, spaceName, particleData);
     });
 });
 

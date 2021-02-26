@@ -18,6 +18,14 @@ p {
     pointer-events: none;
 }
 
+.mainCanvas--positiveCursor {
+    cursor: url('/spatial-speaker-space/images/signalStar.png') 10 10, auto;
+}
+
+.mainCanvas--negativeCursor {
+    cursor: url('/spatial-speaker-space/images/signalLine.png') 10 10, auto;
+}
+
 .controlsContainer {
     position: fixed;
     width: 100%;
@@ -156,6 +164,50 @@ p {
 
 .audienceHeader {
     margin: 12px 0 12px 0;
+}
+
+.signalButtonContainer {
+    position: fixed;
+    top: 72px;
+    right: 0px;
+    margin: 10px;
+    -moz-box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+    -ms-box-sizing: border-box;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+}
+
+.signalButton {
+    border: none;
+    cursor: pointer;
+    pointer-events: all;
+    width: 50px;
+    height: 50px;
+}
+
+.signalButton:focus {
+    outline: none;
+}
+
+.signalButton:focus-visible {
+    border: 2px solid rgb(255, 255, 255, 0.1);
+    border-radius: 4px;
+    outline: none;
+}
+
+.signalButton--positive {
+    background: url('/spatial-speaker-space/images/starBubble.png') transparent no-repeat center center;
+}
+
+.signalButton--negative {
+    background: url('/spatial-speaker-space/images/redLineBubble.png') transparent no-repeat center center;
+}
+
+.signalButton--active {
+    background-color: rgba(255, 255, 255, 0.3);
+    border-radius: 4px;
 }
 
 .displayNone {

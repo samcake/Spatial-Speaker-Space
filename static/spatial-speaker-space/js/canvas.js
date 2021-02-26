@@ -1,5 +1,5 @@
-var mainCanvas = document.querySelector(".mainCanvas");
-var ctx = mainCanvas.getContext("2d");
+let mainCanvas = document.querySelector(".mainCanvas");
+let ctx = mainCanvas.getContext("2d");
 
 let pxPerM;
 function updatePixelsPerMeter() {
@@ -35,14 +35,10 @@ function maybeDrawScaleArcs() {
 }
 
 function drawAvatarBase({ isMine, userData, avatarRadiusM, positionInCanvasSpace }) {
-    if (typeof (userData.yawOrientationDegrees) !== "number") {
-        return;
-    }
-
     ctx.translate(positionInCanvasSpace.x, positionInCanvasSpace.y);
-    let amtToRotate = userData.yawOrientationDegrees * Math.PI / 180;
+    let amtToRotate = (userData.yawOrientationDegrees || 0) * Math.PI / 180;
     ctx.rotate(amtToRotate);
-    
+
     // Don't show orientation visualization if user is an audience member.
     if (userData.isSpeaker) {
         ctx.beginPath();
@@ -77,7 +73,7 @@ function drawAvatarBase({ isMine, userData, avatarRadiusM, positionInCanvasSpace
 
 function drawAvatarLabel({ isMine, userData, positionInCanvasSpace }) {
     ctx.translate(positionInCanvasSpace.x, positionInCanvasSpace.y + MY_AVATAR_LABEL_Y_OFFSET_PX);
-    let amtToRotateLabel = -amtToRotateCanvas;
+    let amtToRotateLabel = -canvasRotationDegrees * Math.PI / 180;
     ctx.rotate(amtToRotateLabel);
     let text;
     if (isMine) {
@@ -99,7 +95,7 @@ function drawAvatarLabel({ isMine, userData, positionInCanvasSpace }) {
     ctx.font = MY_AVATAR_LABEL_FONT;
     ctx.fillStyle = getConstrastingTextColor(hexToRGB(userData.hexColor));
     ctx.textAlign = "center";
-    ctx.textBaseline = "middle"; 
+    ctx.textBaseline = "middle";
 
     ctx.fillText(text, 0, 0);
     ctx.rotate(-amtToRotateLabel);
@@ -115,7 +111,7 @@ function drawVolumeBubble({ userData, avatarRadiusM, positionInCanvasSpace }) {
 }
 
 function drawAvatar({ userData }) {
-    if (!userData || !userData.position || typeof (userData.position.x) !== "number" || typeof (userData.position.z) !== "number" || typeof (userData.yawOrientationDegrees) !== "number") {
+    if (!userData || !userData.position || typeof (userData.position.x) !== "number" || typeof (userData.position.z) !== "number") {
         return;
     }
 
@@ -143,8 +139,49 @@ function drawAvatar({ userData }) {
     ctx.translate(mainCanvas.width / 2, mainCanvas.height / 2);
 }
 
+function drawParticles() {
+    if (particleController.activeParticles.length === 0) {
+        return;
+    }
+    
+    ctx.translate(-mainCanvas.width / 2, -mainCanvas.height / 2);
+
+    particleController.activeParticles.forEach((particle) => {
+        if (!particle.currentWorldPositionM.x || !particle.currentWorldPositionM.z ||
+            !particle.dimensionsM.width || !particle.dimensionsM.height ||
+            !particle.image.complete) {
+            return;
+        }
+
+        let positionInCanvasSpace = {
+            "x": Math.round(linearScale(particle.currentWorldPositionM.x, -VIRTUAL_SPACE_DIMENSIONS_PER_SIDE_M / 2, VIRTUAL_SPACE_DIMENSIONS_PER_SIDE_M / 2, 0, mainCanvas.width)),
+            "y": Math.round(linearScale(particle.currentWorldPositionM.z, -VIRTUAL_SPACE_DIMENSIONS_PER_SIDE_M / 2, VIRTUAL_SPACE_DIMENSIONS_PER_SIDE_M / 2, 0, mainCanvas.height))
+        };
+
+        ctx.translate(positionInCanvasSpace.x, positionInCanvasSpace.y);
+        let amtToRotateParticle = -canvasRotationDegrees * Math.PI / 180;
+        ctx.rotate(amtToRotateParticle);
+
+        let oldAlpha = ctx.globalAlpha;
+        ctx.globalAlpha = particle.opacity;
+
+        ctx.drawImage(
+            particle.image,
+            -particle.dimensionsM.width * pxPerM / 2,
+            -particle.dimensionsM.height * pxPerM / 2,
+            particle.dimensionsM.width * pxPerM,
+            particle.dimensionsM.height * pxPerM);
+
+        ctx.globalAlpha = oldAlpha;
+        ctx.rotate(-amtToRotateParticle);
+        ctx.translate(-positionInCanvasSpace.x, -positionInCanvasSpace.y);
+    });
+    
+    ctx.translate(mainCanvas.width / 2, mainCanvas.height / 2);
+}
+
 let myUserData;
-let amtToRotateCanvas;
+let canvasRotationDegrees = 0;
 function updateCanvas() {
     ctx.clearRect(0, 0, mainCanvas.width, mainCanvas.height);
 
@@ -157,12 +194,8 @@ function updateCanvas() {
 
     updatePixelsPerMeter();
 
-    amtToRotateCanvas = 0;
-    if (myUserData && typeof (myUserData.yawOrientationDegrees) === "number") {
-        amtToRotateCanvas = -1 * myUserData.yawOrientationDegrees * Math.PI / 180;
-    }
     ctx.translate(mainCanvas.width / 2, mainCanvas.height / 2);
-    ctx.rotate(amtToRotateCanvas);
+    ctx.rotate(canvasRotationDegrees * Math.PI / 180);
 
     for (const userData of allOtherUserData) {
         drawAvatar({ userData });
@@ -170,7 +203,9 @@ function updateCanvas() {
 
     drawAvatar({ userData: myUserData });
 
-    ctx.rotate(-amtToRotateCanvas);
+    drawParticles();
+
+    ctx.rotate(-canvasRotationDegrees * Math.PI / 180);
     ctx.translate(-mainCanvas.width / 2, -mainCanvas.height / 2);
 }
 
@@ -178,7 +213,6 @@ function updateCanvasDimensions() {
     mainCanvas.width = window.innerWidth;
     mainCanvas.height = window.innerHeight - 60;
 
-    mainCanvas.style.left = `${window.innerWidth / 2 - mainCanvas.width / 2}px`;
     mainCanvas.style.width = `${mainCanvas.width}px`;
     mainCanvas.style.height = `${mainCanvas.height}px`;
 }
