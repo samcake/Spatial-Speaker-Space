@@ -122,6 +122,7 @@ io.sockets.on("connection", (socket) => {
     });
 
     socket.on("addParticle", (providedUserID, spaceName, particleData) => {
+        console.log(`In ${spaceName}, \`${providedUserID}\` added a particle!.`);
         socket.to(spaceName).emit("requestParticleAdd", providedUserID, spaceName, particleData);
     });
 });
