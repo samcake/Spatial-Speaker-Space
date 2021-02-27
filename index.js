@@ -105,17 +105,18 @@ app.get('/spatial-speaker-space/get-connection-age', (req, res) => {
 const http = require("http").createServer(app);
 
 const io = require("socket.io")(http, {
+    path: '/spatial-speaker-space/socket.io',
     cors: {
         origin: `http://localhost:${PORT}`,
         methods: ["GET", "POST"]
     }
 });
 
-io.sockets.on("error", (e) => {
+io.on("error", (e) => {
     console.error(e);
 });
 
-io.sockets.on("connection", (socket) => {
+io.on("connection", (socket) => {
     socket.on("addParticipant", (providedUserID, spaceName) => {
         console.log(`In ${spaceName}, adding participant with ID \`${providedUserID}\`.`);
         socket.join(spaceName);

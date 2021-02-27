@@ -1,4 +1,4 @@
-const socket = io();
+const socket = io('', { path: '/spatial-speaker-space/socket.io'});
 
 function initWebSocketStuff() {
     socket.emit("addParticipant", myProvidedUserID, spaceName);

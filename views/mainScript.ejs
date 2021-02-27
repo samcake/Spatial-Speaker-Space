@@ -455,6 +455,8 @@
         // Set the `srcObject` on our `audio` DOM element to the final, mixed audio stream from the High Fidelity Audio API Server.
         outputAudioEl.srcObject = hifiCommunicator.getOutputAudioMediaStream();
         setOutputMute(false);
+
+        initWebSocketStuff();
     }
 
     let isMuted = false;
