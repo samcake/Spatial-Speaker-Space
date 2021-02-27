@@ -59,7 +59,7 @@
 
         if (typeof (targetYawOrientationDegrees) === "number") {
             myUserData.yawOrientationDegrees = targetYawOrientationDegrees;
-            let threeQuat = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, myUserData.yawOrientationDegrees * Math.PI / 180, 0));
+            let threeQuat = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, myUserData.yawOrientationDegrees * Math.PI / 180, 0, THREE_EULER_ORDER));
             myUserData.orientationQuat.w = threeQuat._w;
             myUserData.orientationQuat.x = threeQuat._x;
             myUserData.orientationQuat.y = threeQuat._y;
@@ -239,7 +239,6 @@
                             console.warn(`We supplied a \`yawOrientationDegrees\` of ${currentLocalUserData.yawOrientationDegrees} degrees, but the server gave us ${yawOrientationDegrees} degrees!`);
                         }
                         currentLocalUserData.yawOrientationDegrees = yawOrientationDegrees;
-                        console.log(currentLocalUserData.yawOrientationDegrees)
 
                         mustUpdateCanvas = true;
                     }
@@ -388,7 +387,8 @@
         // Set up our `HiFiCommunicator` object, supplying our media stream and initial user data.
         hifiCommunicator = new HighFidelityAudio.HiFiCommunicator({
             transmitRateLimitTimeoutMS: 10,
-            onUsersDisconnected: onUsersDisconnected
+            onUsersDisconnected: onUsersDisconnected,
+            userDataStreamingScope: HighFidelityAudio.HiFiUserDataStreamingScopes.Peers
         });
 
         // Set up a new User Data Subscription to get User Data updates from the server.
