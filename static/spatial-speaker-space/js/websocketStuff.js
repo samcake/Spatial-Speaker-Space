@@ -1,5 +1,8 @@
 const socket = io();
-socket.emit("addParticipant", myProvidedUserID, spaceName);
+
+function initWebSocketStuff() {
+    socket.emit("addParticipant", myProvidedUserID, spaceName);
+}
 
 function stopWebSocketStuff() {
     socket.emit("removeParticipant", myProvidedUserID, spaceName);
