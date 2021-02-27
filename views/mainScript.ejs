@@ -187,7 +187,7 @@
             let isMine = currentProvidedUserID === myProvidedUserID;
 
             if (currentLocalUserData) {
-                if (currentDataFromServer.position) {
+                if (currentDataFromServer.position && !isMine) {
                     if (!currentLocalUserData.position) {
                         currentLocalUserData.position = new HighFidelityAudio.Point3D();
                     }
@@ -206,7 +206,7 @@
                     }
                 }
                 
-                if (currentDataFromServer.orientationQuat) {
+                if (currentDataFromServer.orientationQuat && !isMine) {
                     if (!currentLocalUserData.orientationQuat) {
                         currentLocalUserData.orientationQuat = new HighFidelityAudio.OrientationQuat3D();
                     }
@@ -388,7 +388,7 @@
         hifiCommunicator = new HighFidelityAudio.HiFiCommunicator({
             transmitRateLimitTimeoutMS: 10,
             onUsersDisconnected: onUsersDisconnected,
-            userDataStreamingScope: HighFidelityAudio.HiFiUserDataStreamingScopes.Peers
+            userDataStreamingScope: HighFidelityAudio.HiFiUserDataStreamingScopes.All
         });
 
         // Set up a new User Data Subscription to get User Data updates from the server.
